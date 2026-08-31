@@ -1,0 +1,13 @@
+build/
+out/
+.vs/
+*.user
+*.VC.db
+*.VC.opendb
+*.sln.docstates
+
+recordings/*
+!recordings/.gitkeep
+
+logs/*
+!logs/.gitkeep
