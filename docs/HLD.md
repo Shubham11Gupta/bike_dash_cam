@@ -58,6 +58,6 @@ Bike Dashcam is a software-first Proof of Concept for a multi-camera motorcycle 
 ## Status as of August 30, 2026
 
 - Planned: camera discovery, camera initialization, dual-camera capture, H.264 recording, segmentation, circular recording, recovery, and long-duration stress testing.
-- Implemented: Milestone 1 foundation, including project structure, startup controller, configuration loader, logging foundation, storage initialization, subsystem interfaces, and automated test scaffolding.
+- Implemented: Milestones 1 and 2, including the foundation plus Windows integrated-camera discovery and initialization through the camera abstraction.
 - Tested: configuration parsing, startup readiness flow, and storage directory initialization.
 - Verified: Windows configure, build, executable startup, and automated tests completed on August 30, 2026. See `docs/TESTING.md` for the current verification record.

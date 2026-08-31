@@ -4,8 +4,8 @@ Bike Dashcam is a software-first Proof of Concept for a multi-camera motorcycle 
 
 ## Current scope
 
-- Milestone 1 implemented: project foundation, startup flow, configuration loading, logging foundation, subsystem skeletons, storage initialization, and test infrastructure.
-- Milestones 2 and beyond remain planned: camera discovery, dual capture, recording, segmentation, circular storage, recovery, and stress testing.
+- Milestones 1 and 2 implemented: project foundation plus Windows camera discovery and initialization through an abstract camera backend.
+- Milestones 3 and beyond remain planned: a second camera, dual capture, recording, segmentation, circular storage, recovery, and stress testing.
 
 ## Verified environment
 

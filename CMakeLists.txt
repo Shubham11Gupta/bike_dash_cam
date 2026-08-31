@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(CTest)
 
-option(BIKE_DASHCAM_BUILD_TESTS "Build Milestone 1 test targets" ON)
+option(BIKE_DASHCAM_BUILD_TESTS "Build Bike Dashcam test targets" ON)
 
 function(bike_dashcam_apply_warnings target_name)
     if(MSVC)
@@ -84,6 +84,7 @@ message(STATUS "  GoogleTest headers: ${BIKE_DASHCAM_GTEST_STATUS}")
 
 add_library(bike_dashcam_core
     src/application/DashcamController.cpp
+    src/camera/CameraBackendFactory.cpp
     src/camera/CameraManager.cpp
     src/configuration/ConfigManager.cpp
     src/events/EventManager.cpp
@@ -95,6 +96,13 @@ add_library(bike_dashcam_core
     src/system/SystemMonitor.cpp
     src/system/Watchdog.cpp
 )
+
+if(WIN32)
+    target_sources(bike_dashcam_core PRIVATE
+        src/camera/windows/WindowsMediaFoundationCameraBackend.cpp
+    )
+    target_link_libraries(bike_dashcam_core PRIVATE mfplat mf ole32)
+endif()
 
 target_include_directories(bike_dashcam_core PUBLIC "${PROJECT_SOURCE_DIR}/src")
 target_compile_definitions(bike_dashcam_core PUBLIC BIKE_DASHCAM_VERSION="${PROJECT_VERSION}")

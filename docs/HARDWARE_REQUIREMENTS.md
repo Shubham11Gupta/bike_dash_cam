@@ -2,7 +2,7 @@
 
 ## Current status
 
-This document is intentionally a placeholder in Milestone 1.
+This document is intentionally a placeholder through Milestone 2. Device enumeration and activation do not provide the performance data needed to derive hardware requirements.
 
 ## What is known today
 

@@ -11,7 +11,7 @@ The following environment was verified on August 30, 2026:
 
 ## Dependency status
 
-- Required for Milestone 1: C++20 compiler and CMake.
+- Required through Milestone 2: C++20 compiler and CMake. Windows builds also use the Media Foundation SDK libraries included with Visual Studio and the Windows SDK.
 - Preferred later: GStreamer, FFmpeg, OpenCV, and GoogleTest.
 - Current local detection on August 30, 2026: GStreamer not found, FFmpeg not found, OpenCV not found, GoogleTest not found in the active shell or the common Windows locations checked during setup.
 
@@ -38,7 +38,7 @@ cmd /c 'call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary
 
 - The `cmake` executable was not available on the default `PATH` in the active shell.
 - The Visual Studio 2026 generator existed, but on August 30, 2026 it did not auto-detect a usable C++ compiler in this shell.
-- The verified Milestone 1 build flow therefore uses `vcvars64.bat` plus `NMake Makefiles`, still with MSVC as the compiler.
+- The verified Milestone 2 build flow uses `vcvars64.bat` plus `NMake Makefiles`, still with MSVC as the compiler.
 
 ## Run
 
@@ -63,5 +63,5 @@ If the executable is started from a different working directory, pass the config
 
 - Keep the core application platform-independent where possible.
 - Add hardware-specific integrations only behind stable interfaces.
-- Do not require GStreamer, FFmpeg, OpenCV, or board-specific code for Milestone 1 builds.
+- Do not require GStreamer, FFmpeg, OpenCV, or board-specific code through Milestone 2 builds.
 - Treat documentation updates as part of each architectural change.

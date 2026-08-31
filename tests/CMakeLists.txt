@@ -1,5 +1,6 @@
 add_executable(bike_dashcam_tests
     TestMain.cpp
+    CameraManagerTests.cpp
     ConfigManagerTests.cpp
     DashcamControllerTests.cpp
 )

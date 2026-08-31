@@ -223,6 +223,10 @@ void ConfigManager::assignValue(
             config_.cameras.expected_camera_count = parsed_int;
             return;
         }
+        if (key == "preferred_camera_name") {
+            config_.cameras.preferred_camera_name = value;
+            return;
+        }
         if (key == "target_width" && parseInt(value, parsed_int) && parsed_int > 0) {
             config_.cameras.target_width = parsed_int;
             return;

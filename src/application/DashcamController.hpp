@@ -12,12 +12,15 @@
 #include "system/Watchdog.hpp"
 
 #include <filesystem>
+#include <memory>
+#include <vector>
 
 namespace bike_dashcam::application {
 
 class DashcamController {
 public:
     DashcamController();
+    explicit DashcamController(std::vector<std::shared_ptr<camera::ICameraBackend>> camera_backends);
 
     bool initialize(const std::filesystem::path& config_path);
     const StartupReport& startupReport() const;

@@ -4,8 +4,27 @@
 #include "application/DashcamController.hpp"
 
 #include <filesystem>
+#include <memory>
 
 namespace bike_dashcam::tests {
+namespace {
+
+class FakeCameraBackend final : public camera::ICameraBackend {
+public:
+    std::string backendName() const override {
+        return "Fake controller camera backend";
+    }
+
+    std::vector<camera::CameraDescriptor> discover() override {
+        return {{"test-camera", "Integrated Test Camera", backendName(), true}};
+    }
+
+    bool initialize(const camera::CameraDescriptor&, std::string&) override {
+        return true;
+    }
+};
+
+}  // namespace
 
 bool runDashcamControllerTests() {
     TestContext context{"DashcamControllerTests"};
@@ -24,7 +43,8 @@ bool runDashcamControllerTests() {
         << "  logs_directory: " << quotedPath(logs_directory) << '\n'
         << '\n'
         << "cameras:\n"
-        << "  expected_camera_count: 2\n"
+        << "  expected_camera_count: 1\n"
+        << "  preferred_camera_name: Integrated\n"
         << "  target_width: 1920\n"
         << "  target_height: 1080\n"
         << "  target_fps: 30\n"
@@ -40,7 +60,8 @@ bool runDashcamControllerTests() {
 
     writeTextFile(config_path, config_stream.str());
 
-    application::DashcamController controller;
+    application::DashcamController controller{std::vector<std::shared_ptr<camera::ICameraBackend>>{
+        std::make_shared<FakeCameraBackend>()}};
     context.expect(controller.initialize(config_path), "controller should initialize from a valid config");
 
     const auto& report = controller.startupReport();

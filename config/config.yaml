@@ -5,7 +5,8 @@ application:
   logs_directory: logs
 
 cameras:
-  expected_camera_count: 2
+  expected_camera_count: 1
+  preferred_camera_name: ""
   target_width: 1920
   target_height: 1080
   target_fps: 30

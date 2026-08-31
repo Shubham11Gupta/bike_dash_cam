@@ -18,6 +18,7 @@ struct NamedTest {
 int main() {
     const std::vector<NamedTest> tests = {
         {"ConfigManagerTests", &bike_dashcam::tests::runConfigManagerTests},
+        {"CameraManagerTests", &bike_dashcam::tests::runCameraManagerTests},
         {"DashcamControllerTests", &bike_dashcam::tests::runDashcamControllerTests},
     };
 

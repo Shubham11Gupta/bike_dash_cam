@@ -1,6 +1,7 @@
 #include "application/DashcamController.hpp"
 
 #include "events/Event.hpp"
+#include "camera/CameraBackendFactory.hpp"
 #include "platform/PlatformInfo.hpp"
 
 #include <chrono>
@@ -40,10 +41,17 @@ recording::RecordingProfile buildRecordingProfile(const configuration::DashcamCo
 }  // namespace
 
 DashcamController::DashcamController()
+    : DashcamController(camera::createPlatformCameraBackends()) {
+}
+
+DashcamController::DashcamController(std::vector<std::shared_ptr<camera::ICameraBackend>> camera_backends)
     : logger_(),
       camera_manager_(logger_),
       recording_manager_(logger_),
       watchdog_(std::chrono::seconds{5}) {
+    for (auto& backend : camera_backends) {
+        camera_manager_.registerBackend(std::move(backend));
+    }
 }
 
 bool DashcamController::initialize(const std::filesystem::path& config_path) {
@@ -91,7 +99,10 @@ bool DashcamController::initialize(const std::filesystem::path& config_path) {
             recording_error);
 
         std::string camera_error;
-        const bool cameras_ready = camera_manager_.initialize(camera_error);
+        const bool cameras_ready = camera_manager_.initialize(
+            static_cast<std::size_t>(config_manager_.config().cameras.expected_camera_count),
+            config_manager_.config().cameras.preferred_camera_name,
+            camera_error);
 
         application_ok = segment_ready && recording_ready && cameras_ready && watchdog_.isHealthy();
         if (!segment_ready) {
@@ -109,7 +120,7 @@ bool DashcamController::initialize(const std::filesystem::path& config_path) {
             "startup",
             events::EventSeverity::Info,
             "DashcamController",
-            "Milestone 1 foundation initialized."});
+            "Milestone 2 camera initialization completed."});
     } else {
         application_detail = "Skipped because configuration failed.";
         system_detail = "Skipped because configuration failed.";

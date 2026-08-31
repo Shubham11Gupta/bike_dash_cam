@@ -1,6 +1,24 @@
 #include "camera/CameraManager.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <exception>
+
+namespace {
+
+std::string lowercase(const std::string_view value) {
+    std::string result{value};
+    std::transform(result.begin(), result.end(), result.begin(), [](const unsigned char character) {
+        return static_cast<char>(std::tolower(character));
+    });
+    return result;
+}
+
+bool matchesPreferredName(const bike_dashcam::camera::CameraDescriptor& camera, const std::string_view preferred_name) {
+    return preferred_name.empty() || lowercase(camera.name).find(lowercase(preferred_name)) != std::string::npos;
+}
+
+}  // namespace
 
 namespace bike_dashcam::camera {
 
@@ -13,8 +31,17 @@ void CameraManager::registerBackend(std::shared_ptr<ICameraBackend> backend) {
     }
 }
 
-bool CameraManager::initialize(std::string& error_message) {
+bool CameraManager::initialize(
+    const std::size_t required_camera_count,
+    const std::string_view preferred_camera_name,
+    std::string& error_message) {
     discovered_cameras_.clear();
+    initialized_cameras_.clear();
+
+    if (required_camera_count == 0) {
+        error_message = "At least one camera is required.";
+        return false;
+    }
 
     try {
         for (const auto& backend : backends_) {
@@ -24,12 +51,49 @@ bool CameraManager::initialize(std::string& error_message) {
 
             auto discovered = backend->discover();
             discovered_cameras_.insert(discovered_cameras_.end(), discovered.begin(), discovered.end());
+            for (const auto& camera : discovered) {
+                logger_.log(
+                    logging::LogLevel::Info,
+                    "CameraManager",
+                    "Discovered camera: " + camera.name + " (" + backend->backendName() + ")");
+            }
+        }
+
+        for (const auto& camera : discovered_cameras_) {
+            if (!camera.available || !matchesPreferredName(camera, preferred_camera_name)) {
+                continue;
+            }
+
+            const auto backend = std::find_if(backends_.begin(), backends_.end(), [&camera](const auto& candidate) {
+                return candidate && candidate->backendName() == camera.backend_name;
+            });
+            if (backend == backends_.end()) {
+                continue;
+            }
+
+            std::string initialization_error;
+            if (!(*backend)->initialize(camera, initialization_error)) {
+                logger_.log(logging::LogLevel::Warning, "CameraManager", "Could not initialize " + camera.name + ": " + initialization_error);
+                continue;
+            }
+
+            initialized_cameras_.push_back(camera);
+            if (initialized_cameras_.size() == required_camera_count) {
+                break;
+            }
+        }
+
+        if (initialized_cameras_.size() != required_camera_count) {
+            error_message = "Required " + std::to_string(required_camera_count) + " initialized camera(s), found " +
+                std::to_string(initialized_cameras_.size()) + ".";
+            return false;
         }
 
         logger_.log(
             logging::LogLevel::Debug,
             "CameraManager",
-            "Initialized camera manager with " + std::to_string(backends_.size()) + " backend(s).");
+            "Initialized " + std::to_string(initialized_cameras_.size()) + " camera(s) using " +
+                std::to_string(backends_.size()) + " backend(s).");
         return true;
     } catch (const std::exception& exception) {
         error_message = exception.what();
@@ -45,8 +109,16 @@ std::size_t CameraManager::discoveredCameraCount() const {
     return discovered_cameras_.size();
 }
 
+std::size_t CameraManager::initializedCameraCount() const {
+    return initialized_cameras_.size();
+}
+
 const std::vector<CameraDescriptor>& CameraManager::discoveredCameras() const {
     return discovered_cameras_;
+}
+
+const std::vector<CameraDescriptor>& CameraManager::initializedCameras() const {
+    return initialized_cameras_;
 }
 
 }  // namespace bike_dashcam::camera
