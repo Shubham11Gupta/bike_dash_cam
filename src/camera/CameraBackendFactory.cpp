@@ -1,4 +1,5 @@
 #include "camera/CameraBackendFactory.hpp"
+#include "camera/DummyCameraBackend.hpp"
 
 #ifdef _WIN32
 #include "camera/windows/WindowsMediaFoundationCameraBackend.hpp"
@@ -8,9 +9,9 @@ namespace bike_dashcam::camera {
 
 std::vector<std::shared_ptr<ICameraBackend>> createPlatformCameraBackends() {
 #ifdef _WIN32
-    return {std::make_shared<WindowsMediaFoundationCameraBackend>()};
+    return {std::make_shared<WindowsMediaFoundationCameraBackend>(), std::make_shared<DummyCameraBackend>()};
 #else
-    return {};
+    return {std::make_shared<DummyCameraBackend>()};
 #endif
 }
 

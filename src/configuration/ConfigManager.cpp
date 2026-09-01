@@ -227,6 +227,10 @@ void ConfigManager::assignValue(
             config_.cameras.preferred_camera_name = value;
             return;
         }
+        if (key == "ignored_camera_name") {
+            config_.cameras.ignored_camera_name = value;
+            return;
+        }
         if (key == "target_width" && parseInt(value, parsed_int) && parsed_int > 0) {
             config_.cameras.target_width = parsed_int;
             return;
@@ -237,6 +241,10 @@ void ConfigManager::assignValue(
         }
         if (key == "target_fps" && parseInt(value, parsed_int) && parsed_int > 0) {
             config_.cameras.target_fps = parsed_int;
+            return;
+        }
+        if (key == "capture_duration_seconds" && parseInt(value, parsed_int) && parsed_int > 0) {
+            config_.cameras.capture_duration_seconds = parsed_int;
             return;
         }
     } else if (section == "recording") {

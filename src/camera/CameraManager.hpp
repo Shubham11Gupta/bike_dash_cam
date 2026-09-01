@@ -4,6 +4,7 @@
 #include "logging/Logger.hpp"
 
 #include <memory>
+#include <chrono>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,7 +19,10 @@ public:
     bool initialize(
         std::size_t required_camera_count,
         std::string_view preferred_camera_name,
+        std::string_view ignored_camera_name,
         std::string& error_message);
+    bool captureFor(std::chrono::milliseconds duration, std::vector<CaptureStatistics>& statistics,
+                    std::string& error_message);
 
     std::size_t backendCount() const;
     std::size_t discoveredCameraCount() const;

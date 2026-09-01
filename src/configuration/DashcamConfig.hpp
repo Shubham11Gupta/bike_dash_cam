@@ -15,9 +15,11 @@ struct ApplicationSettings {
 struct CameraSettings {
     int expected_camera_count{1};
     std::string preferred_camera_name;
+    std::string ignored_camera_name;
     int target_width{1920};
     int target_height{1080};
     int target_fps{30};
+    int capture_duration_seconds{5};
 };
 
 struct RecordingSettings {

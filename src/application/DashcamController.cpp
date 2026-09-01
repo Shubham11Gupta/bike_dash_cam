@@ -102,15 +102,33 @@ bool DashcamController::initialize(const std::filesystem::path& config_path) {
         const bool cameras_ready = camera_manager_.initialize(
             static_cast<std::size_t>(config_manager_.config().cameras.expected_camera_count),
             config_manager_.config().cameras.preferred_camera_name,
+            config_manager_.config().cameras.ignored_camera_name,
             camera_error);
 
-        application_ok = segment_ready && recording_ready && cameras_ready && watchdog_.isHealthy();
+        std::vector<camera::CaptureStatistics> capture_statistics;
+        std::string capture_error;
+        const bool capture_ready = cameras_ready && camera_manager_.captureFor(
+            std::chrono::seconds{config_manager_.config().cameras.capture_duration_seconds},
+            capture_statistics,
+            capture_error);
+        for (const auto& statistics : capture_statistics) {
+            logger_.log(
+                logging::LogLevel::Info,
+                "CameraManager",
+                "Capture " + statistics.camera_name + ": " + std::to_string(statistics.frame_count) +
+                    " frames, " + std::to_string(statistics.fps) + " FPS, " +
+                    std::to_string(statistics.dropped_frame_count) + " dropped.");
+        }
+
+        application_ok = segment_ready && recording_ready && cameras_ready && capture_ready && watchdog_.isHealthy();
         if (!segment_ready) {
             application_detail = "Segment duration must be positive.";
         } else if (!recording_ready) {
             application_detail = recording_error;
         } else if (!cameras_ready) {
             application_detail = camera_error;
+        } else if (!capture_ready) {
+            application_detail = capture_error;
         } else if (!watchdog_.isHealthy()) {
             application_detail = "Watchdog reported unhealthy state during startup.";
         }
@@ -120,7 +138,7 @@ bool DashcamController::initialize(const std::filesystem::path& config_path) {
             "startup",
             events::EventSeverity::Info,
             "DashcamController",
-            "Milestone 2 camera initialization completed."});
+            "Milestone 4 dual-camera capture probe completed."});
     } else {
         application_detail = "Skipped because configuration failed.";
         system_detail = "Skipped because configuration failed.";

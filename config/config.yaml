@@ -5,11 +5,13 @@ application:
   logs_directory: logs
 
 cameras:
-  expected_camera_count: 1
+  expected_camera_count: 2
   preferred_camera_name: ""
+  ignored_camera_name: W100
   target_width: 1920
   target_height: 1080
   target_fps: 30
+  capture_duration_seconds: 5
 
 recording:
   codec: H264

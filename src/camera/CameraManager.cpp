@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <exception>
+#include <thread>
 
 namespace {
 
@@ -16,6 +17,9 @@ std::string lowercase(const std::string_view value) {
 
 bool matchesPreferredName(const bike_dashcam::camera::CameraDescriptor& camera, const std::string_view preferred_name) {
     return preferred_name.empty() || lowercase(camera.name).find(lowercase(preferred_name)) != std::string::npos;
+}
+bool matchesIgnoredName(const bike_dashcam::camera::CameraDescriptor& camera, const std::string_view ignored_name) {
+    return !ignored_name.empty() && lowercase(camera.name).find(lowercase(ignored_name)) != std::string::npos;
 }
 
 }  // namespace
@@ -34,6 +38,7 @@ void CameraManager::registerBackend(std::shared_ptr<ICameraBackend> backend) {
 bool CameraManager::initialize(
     const std::size_t required_camera_count,
     const std::string_view preferred_camera_name,
+    const std::string_view ignored_camera_name,
     std::string& error_message) {
     discovered_cameras_.clear();
     initialized_cameras_.clear();
@@ -60,7 +65,8 @@ bool CameraManager::initialize(
         }
 
         for (const auto& camera : discovered_cameras_) {
-            if (!camera.available || !matchesPreferredName(camera, preferred_camera_name)) {
+            if (!camera.available || matchesIgnoredName(camera, ignored_camera_name) ||
+                !matchesPreferredName(camera, preferred_camera_name)) {
                 continue;
             }
 
@@ -99,6 +105,42 @@ bool CameraManager::initialize(
         error_message = exception.what();
         return false;
     }
+}
+
+bool CameraManager::captureFor(const std::chrono::milliseconds duration, std::vector<CaptureStatistics>& statistics,
+                               std::string& error_message) {
+    statistics.clear();
+    error_message.clear();
+    if (initialized_cameras_.empty() || duration.count() <= 0) {
+        error_message = "Initialized cameras and a positive capture duration are required.";
+        return false;
+    }
+
+    struct Result { CaptureStatistics statistics; std::string error; bool success{false}; };
+    std::vector<Result> results(initialized_cameras_.size());
+    std::vector<std::thread> workers;
+    workers.reserve(initialized_cameras_.size());
+    for (std::size_t index = 0; index < initialized_cameras_.size(); ++index) {
+        workers.emplace_back([this, duration, index, &results] {
+            const auto& camera = initialized_cameras_[index];
+            const auto backend = std::find_if(backends_.begin(), backends_.end(), [&camera](const auto& candidate) {
+                return candidate && candidate->backendName() == camera.backend_name;
+            });
+            if (backend != backends_.end()) {
+                results[index].success = (*backend)->captureFor(camera, duration, results[index].statistics, results[index].error);
+            } else {
+                results[index].error = "Owning camera backend is unavailable.";
+            }
+        });
+    }
+    for (auto& worker : workers) { worker.join(); }
+    bool success = true;
+    for (const auto& result : results) {
+        statistics.push_back(result.statistics);
+        success = success && result.success;
+        if (!result.success && error_message.empty()) { error_message = result.error; }
+    }
+    return success;
 }
 
 std::size_t CameraManager::backendCount() const {

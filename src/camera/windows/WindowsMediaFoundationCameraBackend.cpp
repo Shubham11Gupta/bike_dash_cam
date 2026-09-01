@@ -3,7 +3,9 @@
 #include <windows.h>
 #include <mfapi.h>
 #include <mfidl.h>
+#include <mfreadwrite.h>
 
+#include <chrono>
 #include <sstream>
 #include <string>
 
@@ -191,6 +193,61 @@ bool WindowsMediaFoundationCameraBackend::initialize(const CameraDescriptor& cam
         error_message = "Camera device disappeared before initialization.";
     }
     return initialized;
+}
+
+bool WindowsMediaFoundationCameraBackend::captureFor(
+    const CameraDescriptor& camera,
+    const std::chrono::milliseconds duration,
+    CaptureStatistics& statistics,
+    std::string& error_message) {
+    statistics = CaptureStatistics{};
+    statistics.camera_name = camera.name;
+    MediaFoundationScope scope;
+    if (!scope.ready()) { error_message = scope.error(); return false; }
+
+    IMFActivate** devices = nullptr;
+    UINT32 device_count = 0;
+    if (!enumerateDevices(&devices, &device_count, error_message)) { return false; }
+    IMFMediaSource* source = nullptr;
+    for (UINT32 index = 0; index < device_count; ++index) {
+        std::string identifier;
+        if (readAllocatedString(devices[index], MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, identifier) && identifier == camera.id) {
+            const HRESULT result = devices[index]->ActivateObject(IID_PPV_ARGS(&source));
+            if (FAILED(result)) { error_message = "Could not activate camera for capture: " + hresultToString(result); }
+            break;
+        }
+    }
+    releaseDevices(devices, device_count);
+    if (source == nullptr) { if (error_message.empty()) error_message = "Camera device disappeared before capture."; return false; }
+
+    IMFSourceReader* reader = nullptr;
+    const HRESULT reader_result = MFCreateSourceReaderFromMediaSource(source, nullptr, &reader);
+    if (FAILED(reader_result)) {
+        source->Shutdown(); source->Release();
+        error_message = "Could not create camera source reader: " + hresultToString(reader_result);
+        return false;
+    }
+
+    const auto started = std::chrono::steady_clock::now();
+    const auto deadline = started + duration;
+    while (std::chrono::steady_clock::now() < deadline) {
+        DWORD stream_index = 0;
+        DWORD flags = 0;
+        LONGLONG timestamp = 0;
+        IMFSample* sample = nullptr;
+        const HRESULT result = reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &stream_index, &flags, &timestamp, &sample);
+        if (FAILED(result)) { error_message = "Camera sample read failed: " + hresultToString(result); break; }
+        if ((flags & MF_SOURCE_READERF_STREAMTICK) != 0) { ++statistics.dropped_frame_count; }
+        if (sample != nullptr) { ++statistics.frame_count; sample->Release(); }
+    }
+    const double elapsed_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+    statistics.fps = elapsed_seconds > 0.0 ? static_cast<double>(statistics.frame_count) / elapsed_seconds : 0.0;
+    statistics.healthy = error_message.empty() && statistics.frame_count > 0;
+    reader->Release();
+    source->Shutdown();
+    source->Release();
+    if (!statistics.healthy && error_message.empty()) { error_message = "Camera produced no frames during capture interval."; }
+    return statistics.healthy;
 }
 
 }  // namespace bike_dashcam::camera

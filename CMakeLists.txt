@@ -85,6 +85,7 @@ message(STATUS "  GoogleTest headers: ${BIKE_DASHCAM_GTEST_STATUS}")
 add_library(bike_dashcam_core
     src/application/DashcamController.cpp
     src/camera/CameraBackendFactory.cpp
+    src/camera/DummyCameraBackend.cpp
     src/camera/CameraManager.cpp
     src/configuration/ConfigManager.cpp
     src/events/EventManager.cpp
@@ -101,7 +102,7 @@ if(WIN32)
     target_sources(bike_dashcam_core PRIVATE
         src/camera/windows/WindowsMediaFoundationCameraBackend.cpp
     )
-    target_link_libraries(bike_dashcam_core PRIVATE mfplat mf ole32)
+    target_link_libraries(bike_dashcam_core PRIVATE mfplat mf mfreadwrite ole32)
 endif()
 
 target_include_directories(bike_dashcam_core PUBLIC "${PROJECT_SOURCE_DIR}/src")

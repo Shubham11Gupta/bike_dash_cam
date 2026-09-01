@@ -22,6 +22,15 @@ public:
     bool initialize(const camera::CameraDescriptor&, std::string&) override {
         return true;
     }
+
+    bool captureFor(const camera::CameraDescriptor& camera, std::chrono::milliseconds,
+                    camera::CaptureStatistics& statistics, std::string&) override {
+        statistics.camera_name = camera.name;
+        statistics.frame_count = 30;
+        statistics.fps = 30.0;
+        statistics.healthy = true;
+        return true;
+    }
 };
 
 }  // namespace
