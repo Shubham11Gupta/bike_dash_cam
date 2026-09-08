@@ -1,0 +1,76 @@
+# ==============================
+# Build / CMake
+# ==============================
+
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Visual Studio generated project files
+*.vcxproj
+*.vcxproj.filters
+*.sln
+*.suo
+
+
+# ==============================
+# vcpkg
+# ==============================
+
+vcpkg_installed/
+*.nupkg
+
+
+# ==============================
+# Runtime output
+# ==============================
+
+recordings/
+logs/
+
+
+# ==============================
+# Test-generated files
+# ==============================
+
+test_recordings/
+test_segments/
+test_cpp_recording.mp4
+
+
+# ==============================
+# Visual Studio / VS Code
+# ==============================
+
+.vs/
+.vscode/
+
+
+# ==============================
+# Compiled binaries / objects
+# ==============================
+
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.ilk
+
+
+# ==============================
+# Personal / local files
+# ==============================
+
+Installations.md
+
+
+# ==============================
+# OS generated files
+# ==============================
+
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,8 @@
+{
+    "name": "bike-dashcam",
+    "version-string": "0.1.0",
+    "builtin-baseline": "c76c06644034521fb761a39f8f52d8e87d1103d5",
+    "dependencies": [
+        "yaml-cpp"
+    ]
+}

@@ -1,0 +1,21 @@
+system:
+  log_level: INFO
+
+cameras:
+  front:
+    enabled: true
+    resolution: 1920x1080
+    fps: 30
+
+  rear:
+    enabled: true
+    resolution: 1920x1080
+    fps: 30
+
+recording:
+  codec: h264
+  segment_duration: 300
+
+storage:
+  max_usage_percent: 90
+  recording_path: ./recordings

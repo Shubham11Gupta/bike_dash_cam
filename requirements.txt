@@ -1,0 +1,29 @@
+# Bike Dashcam POC-1 Development Requirements
+#
+# This is a C++ project, so this file documents system/tool dependencies
+# rather than Python packages.
+
+## Required
+- Windows 10/11
+- Git
+- Visual Studio 2026 with Desktop development with C++
+- MSVC x64 build tools
+- Windows 10/11 SDK
+- C++ CMake tools for Windows
+- vcpkg
+- CMake 4.4.3 or compatible
+- GStreamer 1.28.6 MSVC x86_64 (Runtime + Development)
+- yaml-cpp 0.9.0 (installed through vcpkg)
+
+## Toolchain
+- C++17
+- MSVC x64
+- CMake
+- vcpkg manifest mode
+- GStreamer
+- yaml-cpp
+
+## Notes
+- MinGW/MSYS2 may coexist, but this project uses MSVC x64.
+- GStreamer must match the application architecture/toolchain.
+- GStreamer `bin` must be on PATH.
