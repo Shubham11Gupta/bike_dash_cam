@@ -37,7 +37,7 @@ logs/
 
 test_recordings/
 test_segments/
-test_cpp_recording.mp4
+test_cpp_recording/
 
 
 # ==============================

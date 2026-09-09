@@ -40,6 +40,8 @@ public:
     const StorageConfig& getStorageConfig() const;
 
 private:
+    bool validate() const;
+
     SystemConfig system_config_;
     CameraConfig front_camera_config_;
     CameraConfig rear_camera_config_;

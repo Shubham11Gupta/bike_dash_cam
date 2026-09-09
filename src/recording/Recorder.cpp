@@ -1,9 +1,10 @@
 #include <iostream>
-
+#include <string>
 #include "Recorder.hpp"
 
-Recorder::Recorder()
-    : pipeline_(nullptr),
+Recorder::Recorder(const RecordingConfig& config)
+    : config_(config),
+      pipeline_(nullptr),
       bus_(nullptr)
 {
 }
@@ -15,19 +16,37 @@ Recorder::~Recorder()
 
 bool Recorder::start()
 {
-    const char* pipeline_description =
+    GError* error = nullptr;
+
+    std::string encoder;
+
+    if (config_.codec == "h264")
+    {
+        encoder = "x264enc key-int-max=30";
+    }
+    else
+    {
+        std::cerr << "Unsupported codec: "
+                << config_.codec
+                << std::endl;
+
+        return false;
+    }
+    const long long segment_duration_ns =
+    static_cast<long long>(config_.segment_duration) * 1000000000LL;
+
+    std::string pipeline_description =
         "filesrc location=\"C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-30s.mp4\" "
         "! decodebin "
         "! videoconvert "
-        "! x264enc "
+        "! " + encoder + " "
         "! h264parse "
-        "! mp4mux "
-        "! filesink location=\"test_cpp_recording.mp4\"";
-
-    GError* error = nullptr;
+        "! splitmuxsink "
+        "location=\"test_cpp_Recording/test_cpp_segment-%02d.mp4\" "
+        "max-size-time=" + std::to_string(segment_duration_ns);
 
     pipeline_ = gst_parse_launch(
-        pipeline_description,
+        pipeline_description.c_str(),
         &error
     );
 

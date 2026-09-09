@@ -71,7 +71,8 @@ int main()
             << storage.recording_path
             << std::endl;
 
-    Recorder recorder;
+    Recorder recorder(
+    config_manager.getRecordingConfig());
 
     if (!recorder.start())
     {
