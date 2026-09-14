@@ -1,18 +1,16 @@
 #include <iostream>
+#include <memory>
+#include <chrono>
+#include <thread>
 
 #include <gst/gst.h>
 
-#include "src/recording/Recorder.hpp"
-
 #include "src/configuration/ConfigManager.hpp"
-
 #include "src/platform/SoftwareEncoderBackend.hpp"
-
-#include "src/camera/SimulatedCamera.hpp"
-
-#include <memory>
-
 #include "src/camera/CameraManager.hpp"
+#include "src/camera/SimulatedCamera.hpp"
+#include "src/recording/Recorder.hpp"
+#include "src/recording/RecordingManager.hpp"
 
 int main()
 {
@@ -24,140 +22,250 @@ int main()
               << gst_version_string()
               << std::endl;
 
+    // ============================================================
+    // Configuration
+    // ============================================================
+
     ConfigManager config_manager;
 
     if (!config_manager.load("config/config.yaml"))
     {
         std::cerr << "Failed to load configuration."
-                << std::endl;
-
-        gst_deinit();
-        return 1;
-    }
-
-    const auto& front_camera =
-        config_manager.getFrontCameraConfig();
-
-    const auto& rear_camera =
-        config_manager.getRearCameraConfig();
-
-    const auto& recording =
-        config_manager.getRecordingConfig();
-
-    const auto& storage =
-        config_manager.getStorageConfig();
-
-    std::cout << "Front camera: "
-            << front_camera.resolution
-            << " @ "
-            << front_camera.fps
-            << " FPS"
-            << std::endl;
-
-    std::cout << "Rear camera: "
-            << rear_camera.resolution
-            << " @ "
-            << rear_camera.fps
-            << " FPS"
-            << std::endl;
-
-    std::cout << "Codec: "
-            << recording.codec
-            << std::endl;
-
-    std::cout << "Segment duration: "
-            << recording.segment_duration
-            << " seconds"
-            << std::endl;
-
-    std::cout << "Storage limit: "
-            << storage.max_usage_percent
-            << "%"
-            << std::endl;
-
-    std::cout << "Recording path: "
-            << storage.recording_path
-            << std::endl;
-
-    SoftwareEncoderBackend encoder_backend;
-
-    SimulatedCamera camera(
-        "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-30s.mp4"
-    );
-
-    if (!camera.start())
-    {
-        std::cerr << "Failed to start simulated camera."
-                << std::endl;
-
-        gst_deinit();
-        return 1;
-    }
-
-    std::cout << "Camera source: "
-            << camera.getPipelineSource()
-            << std::endl;
-
-    std::cout << "Camera healthy: "
-            << (camera.isHealthy() ? "YES" : "NO")
-            << std::endl;
-
-    //camera.stop();
-
-    // CameraManager Testing
-    CameraManager camera_manager;
-
-    camera_manager.addCamera(
-        "front",
-        std::make_unique<SimulatedCamera>(
-            "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-30s.mp4"
-        )
-    );
-
-    camera_manager.addCamera(
-        "rear",
-        std::make_unique<SimulatedCamera>(
-            "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-20s.mp4"
-        )
-    );
-
-    camera_manager.startAll();
-
-    std::cout << "All cameras healthy: "
-            << (camera_manager.areAllHealthy() ? "YES" : "NO")
-            << std::endl;
-
-    Camera* front_camera_object = camera_manager.getCamera("front");
-
-    if (front_camera_object)
-    {
-        std::cout << "Front camera source: "
-                << front_camera_object->getPipelineSource()
-                << std::endl;
-    }
-
-    camera_manager.stopAll();
-// End of CameraManager Testing
-
-    Recorder recorder(
-        config_manager.getRecordingConfig(),
-        &camera,
-        &encoder_backend
-    );
-
-    if (!recorder.start())
-    {
-        std::cerr << "Failed to start recorder."
                   << std::endl;
 
         gst_deinit();
+        return 1;
+    }
+
+    const auto& front_camera_config =
+        config_manager.getFrontCameraConfig();
+
+    const auto& rear_camera_config =
+        config_manager.getRearCameraConfig();
+
+    const auto& recording_config =
+        config_manager.getRecordingConfig();
+
+    const auto& storage_config =
+        config_manager.getStorageConfig();
+
+    std::cout << "Front camera: "
+              << front_camera_config.resolution
+              << " @ "
+              << front_camera_config.fps
+              << " FPS"
+              << std::endl;
+
+    std::cout << "Rear camera: "
+              << rear_camera_config.resolution
+              << " @ "
+              << rear_camera_config.fps
+              << " FPS"
+              << std::endl;
+
+    std::cout << "Codec: "
+              << recording_config.codec
+              << std::endl;
+
+    std::cout << "Segment duration: "
+              << recording_config.segment_duration
+              << " seconds"
+              << std::endl;
+
+    std::cout << "Storage limit: "
+              << storage_config.max_usage_percent
+              << "%"
+              << std::endl;
+
+    std::cout << "Recording path: "
+              << storage_config.recording_path
+              << std::endl;
+
+    // ============================================================
+    // Encoder Backend
+    // ============================================================
+
+    SoftwareEncoderBackend encoder_backend;
+
+    // ============================================================
+    // Camera Manager
+    // ============================================================
+
+    CameraManager camera_manager;
+
+    if (!camera_manager.addCamera(
+            "front",
+            std::make_unique<SimulatedCamera>(
+                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-30s.mp4"
+            )))
+    {
+        std::cerr << "Failed to add front camera."
+                  << std::endl;
+
+        gst_deinit();
+        return 1;
+    }
+
+    if (!camera_manager.addCamera(
+            "rear",
+            std::make_unique<SimulatedCamera>(
+                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-20s.mp4"
+            )))
+    {
+        std::cerr << "Failed to add rear camera."
+                  << std::endl;
+
+        gst_deinit();
+        return 1;
+    }
+
+    // ============================================================
+    // Start Cameras
+    // ============================================================
+
+    if (!camera_manager.startAll())
+    {
+        std::cerr << "Failed to start all cameras."
+                  << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
+
+    // ============================================================
+    // Camera Health Check
+    // ============================================================
+
+    if (!camera_manager.areAllHealthy())
+    {
+        std::cerr << "Camera health check failed."
+                  << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
+
+    std::cout << "All cameras healthy: YES"
+              << std::endl;
+
+    // ============================================================
+    // Get Camera Objects
+    // ============================================================
+
+    Camera* front_camera =
+        camera_manager.getCamera("front");
+
+    Camera* rear_camera =
+        camera_manager.getCamera("rear");
+
+    if (front_camera == nullptr ||
+        rear_camera == nullptr)
+    {
+        std::cerr << "Failed to retrieve cameras."
+                  << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
+
+    std::cout << "Front camera source: "
+              << front_camera->getPipelineSource()
+              << std::endl;
+
+    std::cout << "Rear camera source: "
+              << rear_camera->getPipelineSource()
+              << std::endl;
+
+    // ============================================================
+    // Create Recorders
+    // ============================================================
+    
+    RecordingManager recording_manager;
+
+    // ============================================================
+    // Start Front Recording
+    // ============================================================
+
+    if (!recording_manager.addRecorder(
+            "front",
+            std::make_unique<Recorder>(
+                config_manager.getRecordingConfig(),
+                front_camera,
+                &encoder_backend)))
+    {
+        std::cerr << "Failed to add front recorder."
+                << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
 
         return 1;
     }
 
-    recorder.wait();
+    // ============================================================
+    // Start Rear Recording
+    // ============================================================
 
-    recorder.stop();
+    if (!recording_manager.addRecorder(
+            "rear",
+            std::make_unique<Recorder>(
+                config_manager.getRecordingConfig(),
+                rear_camera,
+                &encoder_backend)))
+    {
+        std::cerr << "Failed to add rear recorder."
+                << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+
+        return 1;
+    }
+
+    // ============================================================
+    // Start All for Recordings
+    // ============================================================
+
+    if (!recording_manager.startAll())
+    {
+        std::cerr << "Failed to start all recorders."
+                << std::endl;
+
+        recording_manager.stopAll();
+        camera_manager.stopAll();
+        gst_deinit();
+
+        return 1;
+    }
+
+    std::cout << "Both recordings started."
+            << std::endl;
+    
+    // ============================================================
+    // Wait for Recordings
+    // ============================================================
+
+    std::this_thread::sleep_for(
+        std::chrono::seconds(10));
+
+    // ============================================================
+    // Stop Recorders
+    // ============================================================
+
+    recording_manager.stopAll();
+
+    // ============================================================
+    // Stop Cameras
+    // ============================================================
+
+    camera_manager.stopAll();
+
+    // ============================================================
+    // Shutdown
+    // ============================================================
 
     gst_deinit();
 
