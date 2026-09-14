@@ -54,6 +54,9 @@ add_executable(bike-dashcam
     main.cpp
     src/recording/Recorder.cpp
     src/configuration/ConfigManager.cpp
+    src/platform/SoftwareEncoderBackend.cpp
+    src/camera/SimulatedCamera.cpp
+    src/camera/CameraManager.cpp
 )
 
 # Link GStreamer

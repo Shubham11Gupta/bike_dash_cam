@@ -2,8 +2,14 @@
 #include <string>
 #include "Recorder.hpp"
 
-Recorder::Recorder(const RecordingConfig& config)
+Recorder::Recorder(
+    const RecordingConfig& config,
+    Camera* camera,
+    EncoderBackend* encoder_backend
+)
     : config_(config),
+      camera_(camera),
+      encoder_backend_(encoder_backend),
       pipeline_(nullptr),
       bus_(nullptr)
 {
@@ -16,27 +22,33 @@ Recorder::~Recorder()
 
 bool Recorder::start()
 {
-    GError* error = nullptr;
-
-    std::string encoder;
-
-    if (config_.codec == "h264")
+    if (camera_ == nullptr)
     {
-        encoder = "x264enc key-int-max=30";
-    }
-    else
-    {
-        std::cerr << "Unsupported codec: "
-                << config_.codec
+        std::cerr << "Camera is not available."
                 << std::endl;
 
+        return false;
+    }
+    
+    std::string camera_source =
+        camera_->getPipelineSource();
+
+    GError* error = nullptr;
+
+    std::string encoder =
+        encoder_backend_->getEncoderElement(
+            config_.codec
+        );
+
+    if (encoder.empty())
+    {
         return false;
     }
     const long long segment_duration_ns =
     static_cast<long long>(config_.segment_duration) * 1000000000LL;
 
     std::string pipeline_description =
-        "filesrc location=\"C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-30s.mp4\" "
+        camera_source + " "
         "! decodebin "
         "! videoconvert "
         "! " + encoder + " "

@@ -4,10 +4,19 @@
 
 #include "../configuration/ConfigManager.hpp"
 
+#include "../platform/EncoderBackend.hpp"
+
+#include "../camera/Camera.hpp"
+
 class Recorder
 {
 public:
-    explicit Recorder(const RecordingConfig& config);
+    Recorder(
+        const RecordingConfig& config,
+        Camera* camera,
+        EncoderBackend* encoder_backend
+    );
+
     ~Recorder();
 
     bool start();
@@ -16,6 +25,8 @@ public:
 
 private:
     RecordingConfig config_;
+    Camera* camera_;
+    EncoderBackend* encoder_backend_;
 
     GstElement* pipeline_;
     GstBus* bus_;
