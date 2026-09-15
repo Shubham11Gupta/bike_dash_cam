@@ -3,10 +3,9 @@
 #include <gst/gst.h>
 
 #include "../configuration/ConfigManager.hpp"
-
-#include "../platform/EncoderBackend.hpp"
-
 #include "../camera/Camera.hpp"
+#include "../platform/EncoderBackend.hpp"
+#include "SegmentManager.hpp"
 
 class Recorder
 {
@@ -14,7 +13,8 @@ public:
     Recorder(
         const RecordingConfig& config,
         Camera* camera,
-        EncoderBackend* encoder_backend
+        EncoderBackend* encoder_backend,
+        SegmentManager* segment_manager
     );
 
     ~Recorder();
@@ -25,8 +25,10 @@ public:
 
 private:
     RecordingConfig config_;
+
     Camera* camera_;
     EncoderBackend* encoder_backend_;
+    SegmentManager* segment_manager_;
 
     GstElement* pipeline_;
     GstBus* bus_;

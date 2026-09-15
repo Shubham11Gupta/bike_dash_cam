@@ -14,8 +14,8 @@ cameras:
 
 recording:
   codec: h264
-  segment_duration: 300
+  segment_duration: 5
 
 storage:
   max_usage_percent: 90
-  recording_path: ./recordings
+  recording_path: ./video_recordings

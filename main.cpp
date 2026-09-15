@@ -11,6 +11,7 @@
 #include "src/camera/SimulatedCamera.hpp"
 #include "src/recording/Recorder.hpp"
 #include "src/recording/RecordingManager.hpp"
+#include "src/recording/SegmentManager.hpp"
 
 int main()
 {
@@ -159,6 +160,38 @@ int main()
 
     Camera* rear_camera =
         camera_manager.getCamera("rear");
+    
+    SegmentManager front_segment_manager(
+        config_manager.getStorageConfig().recording_path,
+        "front",
+        config_manager.getRecordingConfig().segment_duration
+    );
+
+    SegmentManager rear_segment_manager(
+        config_manager.getStorageConfig().recording_path,
+        "rear",
+        config_manager.getRecordingConfig().segment_duration
+    );
+
+    if (!front_segment_manager.initialize())
+    {
+        std::cerr << "Failed to initialize front segment manager."
+                << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
+
+    if (!rear_segment_manager.initialize())
+    {
+        std::cerr << "Failed to initialize rear segment manager."
+                << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
 
     if (front_camera == nullptr ||
         rear_camera == nullptr)
@@ -180,6 +213,56 @@ int main()
               << std::endl;
 
     // ============================================================
+    // Segment Manager Testing
+    // ============================================================
+
+    /*SegmentManager front_segment_manager(
+        config_manager.getStorageConfig().recording_path,
+        "front",
+        config_manager.getRecordingConfig().segment_duration
+    );
+
+    SegmentManager rear_segment_manager(
+        config_manager.getStorageConfig().recording_path,
+        "rear",
+        config_manager.getRecordingConfig().segment_duration
+    );
+
+    if (!front_segment_manager.initialize())
+    {
+        std::cerr << "Failed to initialize front segment manager."
+                << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+
+        return 1;
+    }
+
+    if (!rear_segment_manager.initialize())
+    {
+        std::cerr << "Failed to initialize rear segment manager."
+                << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+
+        return 1;
+    }
+
+    std::cout << "Front output pattern: "
+            << front_segment_manager.getOutputPattern()
+            << std::endl;
+
+    std::cout << "Rear output pattern: "
+            << rear_segment_manager.getOutputPattern()
+            << std::endl;*/
+
+    // ============================================================
+    // End Segment Manager Testing
+    // ============================================================
+
+    // ============================================================
     // Create Recorders
     // ============================================================
     
@@ -194,7 +277,8 @@ int main()
             std::make_unique<Recorder>(
                 config_manager.getRecordingConfig(),
                 front_camera,
-                &encoder_backend)))
+                &encoder_backend,
+                &front_segment_manager)))
     {
         std::cerr << "Failed to add front recorder."
                 << std::endl;
@@ -214,7 +298,8 @@ int main()
             std::make_unique<Recorder>(
                 config_manager.getRecordingConfig(),
                 rear_camera,
-                &encoder_backend)))
+                &encoder_backend,
+                &rear_segment_manager)))
     {
         std::cerr << "Failed to add rear recorder."
                 << std::endl;
@@ -249,7 +334,7 @@ int main()
     // ============================================================
 
     std::this_thread::sleep_for(
-        std::chrono::seconds(10));
+        std::chrono::seconds(18));
 
     // ============================================================
     // Stop Recorders

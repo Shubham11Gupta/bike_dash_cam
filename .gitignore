@@ -38,6 +38,7 @@ logs/
 test_recordings/
 test_segments/
 test_cpp_recording/
+video_recordings/
 
 
 # ==============================
