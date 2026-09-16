@@ -18,11 +18,22 @@ Recorder::Recorder(
 
 Recorder::~Recorder()
 {
-    stop();
+    if (pipeline_ != nullptr)
+    {
+        stop();
+    }
 }
 
 bool Recorder::start()
 {
+    if (pipeline_ != nullptr)
+    {
+        std::cerr
+            << "Recorder is already running."
+            << std::endl;
+
+        return false;
+    }
     if (camera_ == nullptr)
     {
         std::cerr << "Camera is not available."
@@ -42,7 +53,25 @@ bool Recorder::start()
     std::string camera_source =
         camera_->getPipelineSource();
 
+    if (camera_source.empty())
+    {
+        std::cerr
+            << "Camera pipeline source is empty."
+            << std::endl;
+
+        return false;
+    }
+
     GError* error = nullptr;
+
+    if (encoder_backend_ == nullptr)
+    {
+        std::cerr
+            << "Encoder backend is not available."
+            << std::endl;
+
+        return false;
+    }
 
     std::string encoder =
         encoder_backend_->getEncoderElement(
@@ -51,6 +80,11 @@ bool Recorder::start()
 
     if (encoder.empty())
     {
+        std::cerr
+            << "Encoder element is not available for codec: "
+            << config_.codec
+            << std::endl;
+
         return false;
     }
     const std::string output_pattern =
@@ -196,41 +230,68 @@ bool Recorder::wait()
     return success;
 }
 
-void Recorder::stop()
+bool Recorder::stop()
 {
     if (pipeline_ == nullptr)
     {
-        return;
+        std::cerr
+            << "Recorder is not running."
+            << std::endl;
+
+        return false;
     }
 
-    std::cout << "Stopping recording gracefully."
-              << std::endl;
+    bool success = true;
 
-    // Send EOS so GStreamer can finalize the current
-    // recording segment and write the MP4 metadata.
+    std::cout
+        << "Stopping recording gracefully."
+        << std::endl;
+
+    // ------------------------------------------------------------
+    // Send EOS so GStreamer can finalize the current segment
+    // and write the MP4 metadata correctly.
+    // ------------------------------------------------------------
+
     if (!gst_element_send_event(
             pipeline_,
             gst_event_new_eos()))
     {
-        std::cerr << "Failed to send EOS to recorder."
-                  << std::endl;
+        std::cerr
+            << "Failed to send EOS to recorder."
+            << std::endl;
+
+        success = false;
     }
     else
     {
+        // --------------------------------------------------------
         // Wait for EOS or ERROR.
-        GstMessage* message = gst_bus_timed_pop_filtered(
-            bus_,
-            GST_CLOCK_TIME_NONE,
-            static_cast<GstMessageType>(
-                GST_MESSAGE_EOS |
-                GST_MESSAGE_ERROR));
+        // --------------------------------------------------------
 
-        if (message != nullptr)
+        GstMessage* message =
+            gst_bus_timed_pop_filtered(
+                bus_,
+                GST_CLOCK_TIME_NONE,
+                static_cast<GstMessageType>(
+                    GST_MESSAGE_EOS |
+                    GST_MESSAGE_ERROR));
+
+        if (message == nullptr)
+        {
+            std::cerr
+                << "No EOS or ERROR message received "
+                << "while stopping recorder."
+                << std::endl;
+
+            success = false;
+        }
+        else
         {
             if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS)
             {
-                std::cout << "Recording finalized."
-                          << std::endl;
+                std::cout
+                    << "Recording finalized."
+                    << std::endl;
             }
             else if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR)
             {
@@ -242,37 +303,47 @@ void Recorder::stop()
                     &error,
                     &debug_info);
 
-                std::cerr << "Error while stopping recording: "
-                          << (error ? error->message : "Unknown error")
-                          << std::endl;
+                std::cerr
+                    << "Error while stopping recording: "
+                    << (error
+                        ? error->message
+                        : "Unknown error")
+                    << std::endl;
 
-                if (debug_info)
+                if (debug_info != nullptr)
                 {
-                    std::cerr << "Debug information: "
-                              << debug_info
-                              << std::endl;
+                    std::cerr
+                        << "Debug information: "
+                        << debug_info
+                        << std::endl;
                 }
 
-                if (error)
+                if (error != nullptr)
                 {
                     g_error_free(error);
                 }
 
-                if (debug_info)
+                if (debug_info != nullptr)
                 {
                     g_free(debug_info);
                 }
+
+                success = false;
             }
 
             gst_message_unref(message);
         }
     }
 
+    // ------------------------------------------------------------
+    // Stop and release GStreamer pipeline.
+    // ------------------------------------------------------------
+
     gst_element_set_state(
         pipeline_,
         GST_STATE_NULL);
 
-    if (bus_)
+    if (bus_ != nullptr)
     {
         gst_object_unref(bus_);
         bus_ = nullptr;
@@ -280,4 +351,6 @@ void Recorder::stop()
 
     gst_object_unref(pipeline_);
     pipeline_ = nullptr;
+
+    return success;
 }

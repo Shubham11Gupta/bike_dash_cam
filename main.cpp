@@ -342,7 +342,7 @@ int main()
     // Create Recorders
     // ============================================================
     
-    RecordingManager recording_manager;
+    RecordingManager recording_manager(&storage_manager);
 
     // ============================================================
     // Start Front Recording

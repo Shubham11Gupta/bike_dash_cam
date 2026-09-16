@@ -21,7 +21,7 @@ public:
 
     bool start();
     bool wait();
-    void stop();
+    bool stop();
 
 private:
     RecordingConfig config_;
