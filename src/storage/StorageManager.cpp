@@ -161,29 +161,50 @@ double StorageManager::getUsagePercent() const
     ) * 100.0;
 }
 
+
+// ============================================================
+// Storage Limit Check
+// ============================================================
+
 bool StorageManager::isStorageLimitReached() const
 {
     return getUsagePercent() >=
            static_cast<double>(max_usage_percent_);
 }
 
+
+// ============================================================
+// Delete Oldest Segment
+// ============================================================
+
 bool StorageManager::deleteOldestSegment()
 {
     try
     {
-        if (!initialized_)
+        if (!std::filesystem::exists(recording_path_))
         {
-            std::cerr
-                << "Storage manager is not initialized."
-                << std::endl;
-
             return false;
         }
 
         std::filesystem::path oldest_file;
         std::filesystem::file_time_type oldest_time;
 
-        bool found_file = false;
+        bool found_segment = false;
+
+        /*
+         * Search recursively because recordings are organized as:
+         *
+         * video_recordings/
+         * ├── front/
+         * │   ├── segment-00.mp4
+         * │   ├── segment-01.mp4
+         * │   └── ...
+         * │
+         * └── rear/
+         *     ├── segment-00.mp4
+         *     ├── segment-01.mp4
+         *     └── ...
+         */
 
         for (const auto& entry :
              std::filesystem::recursive_directory_iterator(
@@ -194,31 +215,49 @@ bool StorageManager::deleteOldestSegment()
                 continue;
             }
 
-            const auto extension =
-                entry.path().extension().string();
+            const auto& path = entry.path();
 
-            if (extension != ".mp4")
+            /*
+             * For now we only consider MP4 recording segments.
+             */
+            if (path.extension() != ".mp4")
             {
                 continue;
             }
 
-            const auto current_time =
-                std::filesystem::last_write_time(
-                    entry.path());
+            const auto filename =
+                path.filename().string();
 
-            if (!found_file ||
-                current_time < oldest_time)
+            /*
+             * Only delete files that follow our
+             * segment naming convention.
+             *
+             * Example:
+             * segment-00.mp4
+             * segment-01.mp4
+             */
+
+            if (filename.rfind("segment-", 0) != 0)
             {
-                oldest_file = entry.path();
-                oldest_time = current_time;
-                found_file = true;
+                continue;
+            }
+
+            const auto write_time =
+                std::filesystem::last_write_time(path);
+
+            if (!found_segment ||
+                write_time < oldest_time)
+            {
+                oldest_file = path;
+                oldest_time = write_time;
+                found_segment = true;
             }
         }
 
-        if (!found_file)
+        if (!found_segment)
         {
             std::cout
-                << "No recording segments found for cleanup."
+                << "No recording segments found for deletion."
                 << std::endl;
 
             return false;
@@ -229,31 +268,76 @@ bool StorageManager::deleteOldestSegment()
             << oldest_file
             << std::endl;
 
-        if (!std::filesystem::remove(oldest_file))
+        if (std::filesystem::remove(oldest_file))
         {
-            std::cerr
-                << "Failed to delete segment: "
-                << oldest_file
+            std::cout
+                << "Oldest segment deleted successfully."
                 << std::endl;
 
-            return false;
+            return true;
         }
 
-        std::cout
-            << "Oldest segment deleted successfully."
-            << std::endl;
-
-        return true;
+        return false;
     }
     catch (const std::filesystem::filesystem_error& e)
     {
         std::cerr
-            << "Storage cleanup failed: "
+            << "Failed to delete oldest segment: "
             << e.what()
             << std::endl;
 
         return false;
     }
+}
+
+// ============================================================
+// Enforce Storage Limit
+// ============================================================
+
+bool StorageManager::enforceStorageLimit()
+{
+    if (!initialized_)
+    {
+        std::cerr
+            << "Storage manager is not initialized."
+            << std::endl;
+
+        return false;
+    }
+
+    std::cout
+        << "Checking storage limit..."
+        << std::endl;
+
+    while (isStorageLimitReached())
+    {
+        std::cout
+            << "Storage limit reached."
+            << std::endl;
+
+        std::cout
+            << "Current storage usage: "
+            << getUsagePercent()
+            << "%"
+            << std::endl;
+
+        if (!deleteOldestSegment())
+        {
+            std::cerr
+                << "Unable to free storage."
+                << std::endl;
+
+            return false;
+        }
+    }
+
+    std::cout
+        << "Storage usage is within configured limit: "
+        << getUsagePercent()
+        << "%"
+        << std::endl;
+
+    return true;
 }
 
 const std::filesystem::path&

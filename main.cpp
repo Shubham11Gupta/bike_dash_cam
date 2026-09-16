@@ -140,6 +140,23 @@ int main()
             ? "YES"
             : "NO")
         << std::endl;
+    //Test storage limit enforcement
+    std::cout
+        << "Storage limit reached: "
+        << (storage_manager.isStorageLimitReached()
+            ? "YES"
+            : "NO")
+        << std::endl;
+    std::cout
+        << "Enforcing storage limit..."
+        << std::endl;
+
+    if (!storage_manager.enforceStorageLimit())
+    {
+        std::cerr
+            << "Storage limit enforcement failed."
+            << std::endl;
+    }
 
     // ============================================================
     // Encoder Backend

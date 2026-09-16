@@ -24,6 +24,7 @@ public:
 
     bool isStorageLimitReached() const;
     bool deleteOldestSegment();
+    bool enforceStorageLimit();
 
     const std::filesystem::path& getRecordingPath() const;
 
