@@ -12,6 +12,7 @@
 #include "src/recording/Recorder.hpp"
 #include "src/recording/RecordingManager.hpp"
 #include "src/recording/SegmentManager.hpp"
+#include "src/storage/StorageManager.hpp"
 
 int main()
 {
@@ -81,6 +82,64 @@ int main()
     std::cout << "Recording path: "
               << storage_config.recording_path
               << std::endl;
+
+    // ============================================================
+    // Get Storage Objects
+    // ============================================================
+
+    const auto& storage =
+        config_manager.getStorageConfig();
+
+    StorageManager storage_manager(
+        storage.recording_path,
+        storage.max_usage_percent
+    );
+
+    if (!storage_manager.initialize())
+    {
+        std::cerr
+            << "Storage initialization failed."
+            << std::endl;
+
+        gst_deinit();
+        return 1;
+    }
+
+    std::cout
+        << "Storage total: "
+        << storage_manager.getTotalSpace()
+        << " bytes"
+        << std::endl;
+
+    std::cout
+        << "Storage available: "
+        << storage_manager.getAvailableSpace()
+        << " bytes"
+        << std::endl;
+
+    std::cout
+        << "Storage used: "
+        << storage_manager.getUsedSpace()
+        << " bytes"
+        << std::endl;
+
+    std::cout
+        << "Storage usage: "
+        << storage_manager.getUsagePercent()
+        << "%"
+        << std::endl;
+
+    std::cout
+        << "Storage writable: "
+        << (storage_manager.isWritable() ? "YES" : "NO")
+        << std::endl;
+
+    std::cout
+        << "Storage limit reached: "
+        << (storage_manager.isStorageLimitReached()
+            ? "YES"
+            : "NO")
+        << std::endl;
 
     // ============================================================
     // Encoder Backend
@@ -341,6 +400,11 @@ int main()
     // ============================================================
 
     recording_manager.stopAll();
+
+    if (storage_manager.isStorageLimitReached())
+    {
+        storage_manager.deleteOldestSegment();
+    }
 
     // ============================================================
     // Stop Cameras
