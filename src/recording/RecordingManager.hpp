@@ -24,6 +24,7 @@ public:
     bool stopAll();
 
     bool enforceStorageLimit();
+    bool monitorStorage();
 
 private:
     std::unordered_map<std::string, std::unique_ptr<Recorder>> recorders_;

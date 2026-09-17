@@ -173,7 +173,7 @@ int main()
     if (!camera_manager.addCamera(
             "front",
             std::make_unique<SimulatedCamera>(
-                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-30s.mp4"
+                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/front_sample.mp4"
             )))
     {
         std::cerr << "Failed to add front camera."
@@ -186,7 +186,7 @@ int main()
     if (!camera_manager.addCamera(
             "rear",
             std::make_unique<SimulatedCamera>(
-                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/sample-20s.mp4"
+                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/rear_sample.mp4"
             )))
     {
         std::cerr << "Failed to add rear camera."
@@ -344,6 +344,23 @@ int main()
     
     RecordingManager recording_manager(&storage_manager);
 
+    std::cout
+        << "Testing runtime storage monitor..."
+        << std::endl;
+
+    if (!recording_manager.monitorStorage())
+    {
+        std::cerr
+            << "Runtime storage monitor test failed."
+            << std::endl;
+    }
+    else
+    {
+        std::cout
+            << "Runtime storage monitor test passed."
+            << std::endl;
+    }
+
     // ============================================================
     // Start Front Recording
     // ============================================================
@@ -410,7 +427,7 @@ int main()
     // ============================================================
 
     std::this_thread::sleep_for(
-        std::chrono::seconds(18));
+        std::chrono::seconds(60));
 
     // ============================================================
     // Stop Recorders

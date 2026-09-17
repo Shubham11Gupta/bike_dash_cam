@@ -160,3 +160,37 @@ bool RecordingManager::enforceStorageLimit()
 
     return true;
 }
+
+bool RecordingManager::monitorStorage()
+{
+    if (storage_manager_ == nullptr)
+    {
+        std::cerr
+            << "Cannot monitor storage: "
+            << "StorageManager is not available."
+            << std::endl;
+
+        return false;
+    }
+
+    const double usage =
+        storage_manager_->getUsagePercent();
+
+    std::cout
+        << "Storage monitor: "
+        << usage
+        << "%"
+        << std::endl;
+
+    if (storage_manager_->isStorageLimitReached())
+    {
+        std::cout
+            << "Storage limit reached. "
+            << "Enforcing storage policy..."
+            << std::endl;
+
+        return enforceStorageLimit();
+    }
+
+    return true;
+}
