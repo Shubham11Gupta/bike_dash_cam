@@ -3,13 +3,22 @@
 #include <iostream>
 
 RecordingManager::RecordingManager(
-    StorageManager* storage_manager)
-    : storage_manager_(storage_manager)
+    StorageManager* storage_manager,
+    EventManager* event_manager)
+    : storage_manager_(storage_manager),
+      event_manager_(event_manager)
 {
     if (storage_manager_ == nullptr)
     {
         std::cerr
             << "Warning: RecordingManager created without StorageManager."
+            << std::endl;
+    }
+
+    if (event_manager_ == nullptr)
+    {
+        std::cerr
+            << "Warning: RecordingManager created without EventManager."
             << std::endl;
     }
 }
@@ -89,6 +98,17 @@ bool RecordingManager::startAll()
 
             success = false;
         }
+        else
+        {
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::RECORDING_STARTED,
+                    entry.first,
+                    "Recording started successfully."
+                );
+            }
+        }
     }
 
     return success;
@@ -108,6 +128,17 @@ bool RecordingManager::stopAll()
         if (!entry.second->stop())
         {
             success = false;
+        }
+        else
+        {
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::RECORDING_STOPPED,
+                    entry.first,
+                    "Recording stopped successfully."
+                );
+            }
         }
     }
 

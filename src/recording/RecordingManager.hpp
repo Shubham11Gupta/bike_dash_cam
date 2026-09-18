@@ -6,11 +6,14 @@
 
 #include "Recorder.hpp"
 #include "../storage/StorageManager.hpp"
+#include "../events/EventManager.hpp"
 
 class RecordingManager
 {
 public:
-    explicit RecordingManager(StorageManager* storage_manager);
+    explicit RecordingManager(
+        StorageManager* storage_manager,
+        EventManager* event_manager);
 
     ~RecordingManager() = default;
 
@@ -30,4 +33,5 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Recorder>> recorders_;
 
     StorageManager* storage_manager_;
+    EventManager* event_manager_;
 };

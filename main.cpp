@@ -13,10 +13,21 @@
 #include "src/recording/RecordingManager.hpp"
 #include "src/recording/SegmentManager.hpp"
 #include "src/storage/StorageManager.hpp"
+#include "src/system/SystemMonitor.hpp"
+#include "src/events/EventManager.hpp"
+#include "src/watchdog/Watchdog.hpp"
 
 int main()
 {
     gst_init(nullptr, nullptr);
+
+    EventManager event_manager;
+
+    event_manager.publish(
+        EventType::SYSTEM_STARTED,
+        "main",
+        "Bike Dashcam POC-1 started."
+    );
 
     std::cout << "Bike Dashcam POC-1" << std::endl;
 
@@ -84,15 +95,12 @@ int main()
               << std::endl;
 
     // ============================================================
-    // Get Storage Objects
+    // Storage Manager
     // ============================================================
 
-    const auto& storage =
-        config_manager.getStorageConfig();
-
     StorageManager storage_manager(
-        storage.recording_path,
-        storage.max_usage_percent
+        storage_config.recording_path,
+        storage_config.max_usage_percent
     );
 
     if (!storage_manager.initialize())
@@ -140,13 +148,7 @@ int main()
             ? "YES"
             : "NO")
         << std::endl;
-    //Test storage limit enforcement
-    std::cout
-        << "Storage limit reached: "
-        << (storage_manager.isStorageLimitReached()
-            ? "YES"
-            : "NO")
-        << std::endl;
+
     std::cout
         << "Enforcing storage limit..."
         << std::endl;
@@ -159,6 +161,37 @@ int main()
     }
 
     // ============================================================
+    // System Monitor
+    // ============================================================
+
+    SystemMonitor system_monitor;
+
+    std::cout
+        << "Testing system monitor..."
+        << std::endl;
+
+    std::cout
+        << "Memory usage: "
+        << system_monitor.getMemoryUsage()
+        << "%"
+        << std::endl;
+
+    std::cout
+        << "CPU usage sample 1: "
+        << system_monitor.getCpuUsage()
+        << "%"
+        << std::endl;
+
+    std::this_thread::sleep_for(
+        std::chrono::seconds(2));
+
+    std::cout
+        << "CPU usage sample 2: "
+        << system_monitor.getCpuUsage()
+        << "%"
+        << std::endl;
+
+    // ============================================================
     // Encoder Backend
     // ============================================================
 
@@ -168,7 +201,7 @@ int main()
     // Camera Manager
     // ============================================================
 
-    CameraManager camera_manager;
+    CameraManager camera_manager(&event_manager);
 
     if (!camera_manager.addCamera(
             "front",
@@ -176,8 +209,9 @@ int main()
                 "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/front_sample.mp4"
             )))
     {
-        std::cerr << "Failed to add front camera."
-                  << std::endl;
+        std::cerr
+            << "Failed to add front camera."
+            << std::endl;
 
         gst_deinit();
         return 1;
@@ -189,8 +223,9 @@ int main()
                 "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/rear_sample.mp4"
             )))
     {
-        std::cerr << "Failed to add rear camera."
-                  << std::endl;
+        std::cerr
+            << "Failed to add rear camera."
+            << std::endl;
 
         gst_deinit();
         return 1;
@@ -202,8 +237,9 @@ int main()
 
     if (!camera_manager.startAll())
     {
-        std::cerr << "Failed to start all cameras."
-                  << std::endl;
+        std::cerr
+            << "Failed to start all cameras."
+            << std::endl;
 
         camera_manager.stopAll();
         gst_deinit();
@@ -216,16 +252,18 @@ int main()
 
     if (!camera_manager.areAllHealthy())
     {
-        std::cerr << "Camera health check failed."
-                  << std::endl;
+        std::cerr
+            << "Camera health check failed."
+            << std::endl;
 
         camera_manager.stopAll();
         gst_deinit();
         return 1;
     }
 
-    std::cout << "All cameras healthy: YES"
-              << std::endl;
+    std::cout
+        << "All cameras healthy: YES"
+        << std::endl;
 
     // ============================================================
     // Get Camera Objects
@@ -236,208 +274,245 @@ int main()
 
     Camera* rear_camera =
         camera_manager.getCamera("rear");
-    
-    SegmentManager front_segment_manager(
-        config_manager.getStorageConfig().recording_path,
-        "front",
-        config_manager.getRecordingConfig().segment_duration
-    );
-
-    SegmentManager rear_segment_manager(
-        config_manager.getStorageConfig().recording_path,
-        "rear",
-        config_manager.getRecordingConfig().segment_duration
-    );
-
-    if (!front_segment_manager.initialize())
-    {
-        std::cerr << "Failed to initialize front segment manager."
-                << std::endl;
-
-        camera_manager.stopAll();
-        gst_deinit();
-        return 1;
-    }
-
-    if (!rear_segment_manager.initialize())
-    {
-        std::cerr << "Failed to initialize rear segment manager."
-                << std::endl;
-
-        camera_manager.stopAll();
-        gst_deinit();
-        return 1;
-    }
 
     if (front_camera == nullptr ||
         rear_camera == nullptr)
     {
-        std::cerr << "Failed to retrieve cameras."
-                  << std::endl;
+        std::cerr
+            << "Failed to retrieve cameras."
+            << std::endl;
 
         camera_manager.stopAll();
         gst_deinit();
         return 1;
     }
 
-    std::cout << "Front camera source: "
-              << front_camera->getPipelineSource()
-              << std::endl;
-
-    std::cout << "Rear camera source: "
-              << rear_camera->getPipelineSource()
-              << std::endl;
-
     // ============================================================
-    // Segment Manager Testing
+    // Segment Managers
     // ============================================================
 
-    /*SegmentManager front_segment_manager(
-        config_manager.getStorageConfig().recording_path,
+    SegmentManager front_segment_manager(
+        storage_config.recording_path,
         "front",
-        config_manager.getRecordingConfig().segment_duration
+        recording_config.segment_duration
     );
 
     SegmentManager rear_segment_manager(
-        config_manager.getStorageConfig().recording_path,
+        storage_config.recording_path,
         "rear",
-        config_manager.getRecordingConfig().segment_duration
+        recording_config.segment_duration
     );
 
     if (!front_segment_manager.initialize())
     {
-        std::cerr << "Failed to initialize front segment manager."
-                << std::endl;
+        std::cerr
+            << "Failed to initialize front segment manager."
+            << std::endl;
 
         camera_manager.stopAll();
         gst_deinit();
-
         return 1;
     }
 
     if (!rear_segment_manager.initialize())
     {
-        std::cerr << "Failed to initialize rear segment manager."
-                << std::endl;
+        std::cerr
+            << "Failed to initialize rear segment manager."
+            << std::endl;
 
         camera_manager.stopAll();
         gst_deinit();
-
         return 1;
     }
 
-    std::cout << "Front output pattern: "
-            << front_segment_manager.getOutputPattern()
-            << std::endl;
-
-    std::cout << "Rear output pattern: "
-            << rear_segment_manager.getOutputPattern()
-            << std::endl;*/
-
-    // ============================================================
-    // End Segment Manager Testing
-    // ============================================================
-
-    // ============================================================
-    // Create Recorders
-    // ============================================================
-    
-    RecordingManager recording_manager(&storage_manager);
-
     std::cout
-        << "Testing runtime storage monitor..."
+        << "Front camera source: "
+        << front_camera->getPipelineSource()
         << std::endl;
 
-    if (!recording_manager.monitorStorage())
+    std::cout
+        << "Rear camera source: "
+        << rear_camera->getPipelineSource()
+        << std::endl;
+
+    // ============================================================
+    // Recording Manager
+    // ============================================================
+
+    RecordingManager recording_manager(
+        &storage_manager,
+        &event_manager
+    );
+
+    if (!recording_manager.addRecorder(
+            "front",
+            std::make_unique<Recorder>(
+                recording_config,
+                front_camera,
+                &encoder_backend,
+                &front_segment_manager)))
     {
         std::cerr
-            << "Runtime storage monitor test failed."
+            << "Failed to add front recorder."
+            << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
+
+    if (!recording_manager.addRecorder(
+            "rear",
+            std::make_unique<Recorder>(
+                recording_config,
+                rear_camera,
+                &encoder_backend,
+                &rear_segment_manager)))
+    {
+        std::cerr
+            << "Failed to add rear recorder."
+            << std::endl;
+
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
+
+    // ============================================================
+    // Start Recordings
+    // ============================================================
+
+    if (!recording_manager.startAll())
+    {
+        std::cerr
+            << "Failed to start all recorders."
+            << std::endl;
+
+        recording_manager.stopAll();
+        camera_manager.stopAll();
+        gst_deinit();
+        return 1;
+    }
+
+    std::cout
+        << "Both recordings started."
+        << std::endl;
+
+    // ============================================================
+    // Watchdog
+    // ============================================================
+
+    Watchdog watchdog(
+        &camera_manager,
+        &recording_manager,
+        &storage_manager,
+        &system_monitor,
+        &event_manager
+    );
+
+    std::cout
+        << "Running watchdog health check..."
+        << std::endl;
+
+    if (!watchdog.checkHealth())
+    {
+        std::cerr
+            << "Watchdog detected a health issue."
             << std::endl;
     }
     else
     {
         std::cout
-            << "Runtime storage monitor test passed."
+            << "Watchdog health check passed."
             << std::endl;
     }
 
     // ============================================================
-    // Start Front Recording
+    // Recording Loop
     // ============================================================
 
-    if (!recording_manager.addRecorder(
-            "front",
-            std::make_unique<Recorder>(
-                config_manager.getRecordingConfig(),
-                front_camera,
-                &encoder_backend,
-                &front_segment_manager)))
+    std::cout
+        << "Recording loop started."
+        << std::endl;
+
+    bool recording_active = true;
+
+    while (recording_active)
     {
-        std::cerr << "Failed to add front recorder."
+        // --------------------------------------------------------
+        // Watchdog health check
+        // --------------------------------------------------------
+
+        if (!watchdog.checkHealth())
+        {
+            std::cerr
+                << "[WATCHDOG] Health check failed."
                 << std::endl;
 
-        camera_manager.stopAll();
-        gst_deinit();
+            event_manager.publish(
+                EventType::APPLICATION_ERROR,
+                "watchdog",
+                "Recording stopped because a health check failed."
+            );
 
-        return 1;
-    }
+            recording_active = false;
+            break;
+        }
 
-    // ============================================================
-    // Start Rear Recording
-    // ============================================================
+        // --------------------------------------------------------
+        // System monitoring
+        // --------------------------------------------------------
 
-    if (!recording_manager.addRecorder(
-            "rear",
-            std::make_unique<Recorder>(
-                config_manager.getRecordingConfig(),
-                rear_camera,
-                &encoder_backend,
-                &rear_segment_manager)))
-    {
-        std::cerr << "Failed to add rear recorder."
-                << std::endl;
-
-        camera_manager.stopAll();
-        gst_deinit();
-
-        return 1;
-    }
-
-    // ============================================================
-    // Start All for Recordings
-    // ============================================================
-
-    if (!recording_manager.startAll())
-    {
-        std::cerr << "Failed to start all recorders."
-                << std::endl;
-
-        recording_manager.stopAll();
-        camera_manager.stopAll();
-        gst_deinit();
-
-        return 1;
-    }
-
-    std::cout << "Both recordings started."
+        std::cout
+            << "[Monitor] CPU: "
+            << system_monitor.getCpuUsage()
+            << "% | Memory: "
+            << system_monitor.getMemoryUsage()
+            << "%"
             << std::endl;
-    
-    // ============================================================
-    // Wait for Recordings
-    // ============================================================
 
-    std::this_thread::sleep_for(
-        std::chrono::seconds(60));
+        // --------------------------------------------------------
+        // Storage monitoring
+        // --------------------------------------------------------
+
+        if (!recording_manager.enforceStorageLimit())
+        {
+            std::cerr
+                << "[Monitor] Storage limit enforcement failed."
+                << std::endl;
+        }
+
+        // --------------------------------------------------------
+        // POC runtime
+        // --------------------------------------------------------
+
+        std::this_thread::sleep_for(
+            std::chrono::seconds(5));
+
+        // --------------------------------------------------------
+        // Temporary POC stop condition
+        // --------------------------------------------------------
+
+        // For now, run the recording loop once and stop.
+        // This will later be replaced by a real shutdown
+        // mechanism / controller state.
+
+        recording_active = false;
+    }
 
     // ============================================================
     // Stop Recorders
     // ============================================================
 
-    recording_manager.stopAll();
+    std::cout
+        << "Recording loop stopped."
+        << std::endl;
 
-    if (storage_manager.isStorageLimitReached())
+    if (!recording_manager.stopAll())
     {
-        storage_manager.deleteOldestSegment();
+        std::cerr
+            << "Failed to stop all recorders."
+            << std::endl;
     }
 
     // ============================================================
@@ -450,10 +525,17 @@ int main()
     // Shutdown
     // ============================================================
 
+    event_manager.publish(
+        EventType::SYSTEM_SHUTDOWN,
+        "main",
+        "Bike Dashcam POC-1 stopped."
+    );
+
     gst_deinit();
 
-    std::cout << "Application finished."
-              << std::endl;
+    std::cout
+        << "Application finished."
+        << std::endl;
 
     return 0;
 }
