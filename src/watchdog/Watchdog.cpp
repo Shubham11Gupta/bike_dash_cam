@@ -59,28 +59,16 @@ bool Watchdog::checkHealth()
                 );
             }
 
-            bool recovered =
+            bool camera_recovered =
                 camera_manager_->recoverCamera(camera_id);
 
-            if (recovered)
+            if (!camera_recovered)
             {
-                if (event_manager_ != nullptr)
-                {
-                    event_manager_->publish(
-                        EventType::CAMERA_RECOVERY_SUCCESS,
-                        "watchdog",
-                        "Camera recovered successfully: " + camera_id
-                    );
+                std::cerr
+                    << "[WATCHDOG] Camera recovery failed: "
+                    << camera_id
+                    << std::endl;
 
-                    event_manager_->publish(
-                        EventType::CAMERA_CONNECTED,
-                        "watchdog",
-                        "Camera is healthy again: " + camera_id
-                    );
-                }
-            }
-            else
-            {
                 if (event_manager_ != nullptr)
                 {
                     event_manager_->publish(
@@ -91,6 +79,50 @@ bool Watchdog::checkHealth()
                 }
 
                 healthy = false;
+                continue;
+            }
+
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::CAMERA_RECOVERY_SUCCESS,
+                    "watchdog",
+                    "Camera recovered successfully: " + camera_id
+                );
+            }
+
+            // --------------------------------------------------------
+            // Recover corresponding recording pipeline
+            // --------------------------------------------------------
+
+            if (recording_manager_ == nullptr)
+            {
+                std::cerr
+                    << "[WATCHDOG] RecordingManager unavailable."
+                    << std::endl;
+
+                healthy = false;
+                continue;
+            }
+
+            if (!recording_manager_->recoverRecorder(camera_id))
+            {
+                std::cerr
+                    << "[WATCHDOG] Recording recovery failed: "
+                    << camera_id
+                    << std::endl;
+
+                healthy = false;
+                continue;
+            }
+
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::CAMERA_CONNECTED,
+                    "watchdog",
+                    "Camera and recording recovered: " + camera_id
+                );
             }
         }
     }

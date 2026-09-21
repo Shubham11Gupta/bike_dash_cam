@@ -26,6 +26,8 @@ public:
     bool startAll();
     bool stopAll();
 
+    bool recoverRecorder(const std::string& id);
+
     bool enforceStorageLimit();
     bool monitorStorage();
 

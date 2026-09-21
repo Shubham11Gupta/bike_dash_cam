@@ -354,3 +354,47 @@ bool Recorder::stop()
 
     return success;
 }
+
+// ------------------------------------------------------------
+// Force stop the recording without waiting for EOS. This may result in a corrupted segment.
+// ------------------------------------------------------------
+
+bool Recorder::forceStop()
+{
+    if (pipeline_ == nullptr)
+    {
+        std::cerr
+            << "[RECORDER] Pipeline is not running."
+            << std::endl;
+
+        return false;
+    }
+
+    std::cout
+        << "[RECORDER] Force stopping recording."
+        << std::endl;
+
+    // Do not wait for EOS.
+    // This path is intended for recovery from
+    // an unhealthy or potentially blocked pipeline.
+
+    gst_element_set_state(
+        pipeline_,
+        GST_STATE_NULL
+    );
+
+    if (bus_ != nullptr)
+    {
+        gst_object_unref(bus_);
+        bus_ = nullptr;
+    }
+
+    gst_object_unref(pipeline_);
+    pipeline_ = nullptr;
+
+    std::cout
+        << "[RECORDER] Recording pipeline force stopped."
+        << std::endl;
+
+    return true;
+}

@@ -428,6 +428,38 @@ int main()
     }
 
     // ============================================================
+    // Camera Failure Simulation
+    // ============================================================
+
+    std::cout
+        << "[TEST] Simulating rear camera failure..."
+        << std::endl;
+
+    Camera* rear_camera_base =
+        camera_manager.getCamera("rear");
+
+    SimulatedCamera* rear_simulated_camera =
+        dynamic_cast<SimulatedCamera*>(rear_camera_base);
+
+    if (rear_simulated_camera == nullptr)
+    {
+        std::cerr
+            << "[TEST] Failed to access simulated rear camera."
+            << std::endl;
+    }
+    else
+    {
+        rear_simulated_camera->simulateFailure();
+
+        std::cout
+            << "[TEST] Rear camera healthy after simulated failure: "
+            << (rear_simulated_camera->isHealthy()
+                ? "YES"
+                : "NO")
+            << std::endl;
+    }
+
+    // ============================================================
     // Recording Loop
     // ============================================================
 

@@ -12,6 +12,8 @@ public:
     bool isHealthy() const override;
 
     std::string getPipelineSource() const override;
+    // POC-only fault injection.
+    void simulateFailure();
 
 private:
     std::string file_path_;

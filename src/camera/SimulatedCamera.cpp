@@ -45,3 +45,12 @@ std::string SimulatedCamera::getPipelineSource() const
 {
     return "filesrc location=\"" + file_path_ + "\"";
 }
+
+void SimulatedCamera::simulateFailure()
+{
+    std::cout
+        << "[TEST] Simulating camera failure."
+        << std::endl;
+
+    running_ = false;
+}

@@ -225,3 +225,73 @@ bool RecordingManager::monitorStorage()
 
     return true;
 }
+bool RecordingManager::recoverRecorder(const std::string& id)
+{
+    auto it = recorders_.find(id);
+
+    if (it == recorders_.end())
+    {
+        std::cerr
+            << "[RECORDING] Recorder not found: "
+            << id
+            << std::endl;
+
+        return false;
+    }
+
+    Recorder* recorder = it->second.get();
+
+    if (recorder == nullptr)
+    {
+        std::cerr
+            << "[RECORDING] Recorder is null: "
+            << id
+            << std::endl;
+
+        return false;
+    }
+
+    std::cout
+        << "[RECORDING] Recovering recorder: "
+        << id
+        << std::endl;
+
+    // Force stop the existing recorder.
+    // Recovery must not block waiting for EOS.
+    if (!recorder->forceStop())
+    {
+        std::cerr
+            << "[RECORDING] Failed to stop recorder during recovery: "
+            << id
+            << std::endl;
+
+        return false;
+    }
+
+    // Start a fresh recording pipeline.
+    if (!recorder->start())
+    {
+        std::cerr
+            << "[RECORDING] Failed to restart recorder: "
+            << id
+            << std::endl;
+
+        return false;
+    }
+
+    std::cout
+        << "[RECORDING] Recorder recovery successful: "
+        << id
+        << std::endl;
+
+    if (event_manager_ != nullptr)
+    {
+        event_manager_->publish(
+            EventType::RECORDING_STARTED,
+            id,
+            "Recording restarted successfully after recovery."
+        );
+    }
+
+    return true;
+}
