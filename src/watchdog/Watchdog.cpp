@@ -141,6 +141,61 @@ bool Watchdog::checkHealth()
     }
 
     // ------------------------------------------------------------
+    // Recording health and recovery
+    // ------------------------------------------------------------
+
+    if (recording_manager_ == nullptr)
+    {
+        std::cerr
+            << "[WATCHDOG] RecordingManager unavailable."
+            << std::endl;
+
+        healthy = false;
+    }
+    else
+    {
+        auto unhealthy_recorders =
+            recording_manager_->getUnhealthyRecorders();
+
+        for (const auto& recorder_id : unhealthy_recorders)
+        {
+            std::cerr
+                << "[WATCHDOG] Recorder unhealthy: "
+                << recorder_id
+                << std::endl;
+
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::APPLICATION_ERROR,
+                    "watchdog",
+                    "Recorder is unhealthy: " + recorder_id
+                );
+            }
+
+            if (!recording_manager_->recoverRecorder(recorder_id))
+            {
+                std::cerr
+                    << "[WATCHDOG] Recorder recovery failed: "
+                    << recorder_id
+                    << std::endl;
+
+                healthy = false;
+                continue;
+            }
+
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::RECORDING_STARTED,
+                    "watchdog",
+                    "Recorder recovered successfully: " + recorder_id
+                );
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
     // Storage health
     // ------------------------------------------------------------
 

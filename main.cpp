@@ -428,6 +428,27 @@ int main()
     }
 
     // ============================================================
+    // POC TEST: Simulate recorder failure
+    // ============================================================
+
+    std::cout
+        << "[TEST] Simulating rear recorder failure..."
+        << std::endl;
+
+    if (recording_manager.simulateRecorderFailure("rear"))
+    {
+        std::cout
+            << "[TEST] Rear recorder failure simulated."
+            << std::endl;
+    }
+    else
+    {
+        std::cerr
+            << "[TEST] Failed to simulate rear recorder failure."
+            << std::endl;
+    }
+
+    // ============================================================
     // Camera Failure Simulation
     // ============================================================
 

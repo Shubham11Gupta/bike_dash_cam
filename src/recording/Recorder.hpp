@@ -24,6 +24,12 @@ public:
     bool stop();
     bool forceStop();
 
+    bool isRunning() const;
+
+    // POC test helper.
+    // Simulates a recorder/pipeline failure without shutting down the application.
+    bool simulateFailure();
+
 private:
     RecordingConfig config_;
 

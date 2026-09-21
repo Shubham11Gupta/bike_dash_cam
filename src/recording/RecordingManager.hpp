@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "Recorder.hpp"
 #include "../storage/StorageManager.hpp"
@@ -30,6 +31,10 @@ public:
 
     bool enforceStorageLimit();
     bool monitorStorage();
+
+    std::vector<std::string> getUnhealthyRecorders() const;
+
+    bool simulateRecorderFailure(const std::string& id);
 
 private:
     std::unordered_map<std::string, std::unique_ptr<Recorder>> recorders_;

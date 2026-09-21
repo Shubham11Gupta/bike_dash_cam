@@ -6,9 +6,10 @@
 
 double SystemMonitor::getCpuUsage()
 {
-    static ULARGE_INTEGER previous_idle;
-    static ULARGE_INTEGER previous_kernel;
-    static ULARGE_INTEGER previous_user;
+    static ULONGLONG previous_idle = 0;
+    static ULONGLONG previous_kernel = 0;
+    static ULONGLONG previous_user = 0;
+    static bool first_sample = true;
 
     FILETIME idle_time;
     FILETIME kernel_time;
@@ -26,21 +27,19 @@ double SystemMonitor::getCpuUsage()
         return -1.0;
     }
 
-    ULARGE_INTEGER current_idle;
-    ULARGE_INTEGER current_kernel;
-    ULARGE_INTEGER current_user;
+    const ULONGLONG current_idle =
+        (static_cast<ULONGLONG>(idle_time.dwHighDateTime) << 32) |
+        idle_time.dwLowDateTime;
 
-    current_idle.LowPart = idle_time.dwLowDateTime;
-    current_idle.HighPart = idle_time.dwHighDateTime;
+    const ULONGLONG current_kernel =
+        (static_cast<ULONGLONG>(kernel_time.dwHighDateTime) << 32) |
+        kernel_time.dwLowDateTime;
 
-    current_kernel.LowPart = kernel_time.dwLowDateTime;
-    current_kernel.HighPart = kernel_time.dwHighDateTime;
+    const ULONGLONG current_user =
+        (static_cast<ULONGLONG>(user_time.dwHighDateTime) << 32) |
+        user_time.dwLowDateTime;
 
-    current_user.LowPart = user_time.dwLowDateTime;
-    current_user.HighPart = user_time.dwHighDateTime;
-
-    static bool first_sample = true;
-
+    // First sample establishes the baseline.
     if (first_sample)
     {
         previous_idle = current_idle;
@@ -52,17 +51,26 @@ double SystemMonitor::getCpuUsage()
         return 0.0;
     }
 
+    // Protect against invalid counter movement.
+    if (current_idle < previous_idle ||
+        current_kernel < previous_kernel ||
+        current_user < previous_user)
+    {
+        previous_idle = current_idle;
+        previous_kernel = current_kernel;
+        previous_user = current_user;
+
+        return 0.0;
+    }
+
     const ULONGLONG idle_delta =
-        current_idle.QuadPart -
-        previous_idle.QuadPart;
+        current_idle - previous_idle;
 
     const ULONGLONG kernel_delta =
-        current_kernel.QuadPart -
-        previous_kernel.QuadPart;
+        current_kernel - previous_kernel;
 
     const ULONGLONG user_delta =
-        current_user.QuadPart -
-        previous_user.QuadPart;
+        current_user - previous_user;
 
     const ULONGLONG total_delta =
         kernel_delta + user_delta;
@@ -81,7 +89,20 @@ double SystemMonitor::getCpuUsage()
         static_cast<double>(total_delta) *
         100.0;
 
-    return 100.0 - idle_percent;
+    double cpu_usage = 100.0 - idle_percent;
+
+    // Defensive bounds.
+    if (cpu_usage < 0.0)
+    {
+        cpu_usage = 0.0;
+    }
+
+    if (cpu_usage > 100.0)
+    {
+        cpu_usage = 100.0;
+    }
+
+    return cpu_usage;
 }
 
 double SystemMonitor::getMemoryUsage()

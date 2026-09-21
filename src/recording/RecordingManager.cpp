@@ -256,19 +256,34 @@ bool RecordingManager::recoverRecorder(const std::string& id)
         << id
         << std::endl;
 
-    // Force stop the existing recorder.
-    // Recovery must not block waiting for EOS.
-    if (!recorder->forceStop())
+    // ------------------------------------------------------------
+    // Stop the existing recorder if it is still running.
+    // ------------------------------------------------------------
+
+    if (recorder->isRunning())
     {
-        std::cerr
-            << "[RECORDING] Failed to stop recorder during recovery: "
+        if (!recorder->stop())
+        {
+            std::cerr
+                << "[RECORDING] Failed to stop recorder during recovery: "
+                << id
+                << std::endl;
+
+            return false;
+        }
+    }
+    else
+    {
+        std::cout
+            << "[RECORDING] Recorder is already stopped: "
             << id
             << std::endl;
-
-        return false;
     }
 
+    // ------------------------------------------------------------
     // Start a fresh recording pipeline.
+    // ------------------------------------------------------------
+
     if (!recorder->start())
     {
         std::cerr
@@ -294,4 +309,53 @@ bool RecordingManager::recoverRecorder(const std::string& id)
     }
 
     return true;
+}
+
+std::vector<std::string>
+RecordingManager::getUnhealthyRecorders() const
+{
+    std::vector<std::string> unhealthy_recorders;
+
+    for (const auto& entry : recorders_)
+    {
+        const std::string& id = entry.first;
+        const Recorder* recorder = entry.second.get();
+
+        if (recorder == nullptr || !recorder->isRunning())
+        {
+            unhealthy_recorders.push_back(id);
+        }
+    }
+
+    return unhealthy_recorders;
+}
+
+bool RecordingManager::simulateRecorderFailure(
+    const std::string& id)
+{
+    auto it = recorders_.find(id);
+
+    if (it == recorders_.end())
+    {
+        std::cerr
+            << "[RECORDING TEST] Recorder not found: "
+            << id
+            << std::endl;
+
+        return false;
+    }
+
+    Recorder* recorder = it->second.get();
+
+    if (recorder == nullptr)
+    {
+        std::cerr
+            << "[RECORDING TEST] Recorder is null: "
+            << id
+            << std::endl;
+
+        return false;
+    }
+
+    return recorder->simulateFailure();
 }

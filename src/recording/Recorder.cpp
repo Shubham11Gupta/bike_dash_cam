@@ -355,6 +355,53 @@ bool Recorder::stop()
     return success;
 }
 
+bool Recorder::isRunning() const
+{
+    return pipeline_ != nullptr;
+}
+
+// ------------------------------------------------------------
+// Simulate Recording Failure
+// ------------------------------------------------------------
+
+bool Recorder::simulateFailure()
+{
+    if (pipeline_ == nullptr)
+    {
+        std::cerr
+            << "[RECORDER TEST] Recorder is already inactive."
+            << std::endl;
+
+        return false;
+    }
+
+    std::cout
+        << "[RECORDER TEST] Simulating recorder failure."
+        << std::endl;
+
+    // Force the GStreamer pipeline down without performing
+    // the normal graceful EOS shutdown.
+    gst_element_set_state(
+        pipeline_,
+        GST_STATE_NULL
+    );
+
+    if (bus_ != nullptr)
+    {
+        gst_object_unref(bus_);
+        bus_ = nullptr;
+    }
+
+    gst_object_unref(pipeline_);
+    pipeline_ = nullptr;
+
+    std::cout
+        << "[RECORDER TEST] Recorder failure simulated."
+        << std::endl;
+
+    return true;
+}
+
 // ------------------------------------------------------------
 // Force stop the recording without waiting for EOS. This may result in a corrupted segment.
 // ------------------------------------------------------------
