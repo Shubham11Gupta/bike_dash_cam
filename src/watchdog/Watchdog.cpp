@@ -1,6 +1,7 @@
 #include "Watchdog.hpp"
 
 #include <iostream>
+#include <unordered_set>
 
 Watchdog::Watchdog(
     CameraManager* camera_manager,
@@ -19,6 +20,7 @@ Watchdog::Watchdog(
 bool Watchdog::checkHealth()
 {
     bool healthy = true;
+    std::unordered_set<std::string> recovered_recorders;
 
     // ------------------------------------------------------------
     // Camera health and recovery
@@ -116,6 +118,8 @@ bool Watchdog::checkHealth()
                 continue;
             }
 
+            recovered_recorders.insert(camera_id);
+
             if (event_manager_ != nullptr)
             {
                 event_manager_->publish(
@@ -125,19 +129,6 @@ bool Watchdog::checkHealth()
                 );
             }
         }
-    }
-
-    // ------------------------------------------------------------
-    // Recording manager health
-    // ------------------------------------------------------------
-
-    if (recording_manager_ == nullptr)
-    {
-        std::cerr
-            << "[WATCHDOG] RecordingManager unavailable."
-            << std::endl;
-
-        healthy = false;
     }
 
     // ------------------------------------------------------------
@@ -159,6 +150,11 @@ bool Watchdog::checkHealth()
 
         for (const auto& recorder_id : unhealthy_recorders)
         {
+            if (recovered_recorders.find(recorder_id) != recovered_recorders.end())
+            {
+                continue;
+            }
+
             std::cerr
                 << "[WATCHDOG] Recorder unhealthy: "
                 << recorder_id
@@ -183,15 +179,6 @@ bool Watchdog::checkHealth()
                 healthy = false;
                 continue;
             }
-
-            if (event_manager_ != nullptr)
-            {
-                event_manager_->publish(
-                    EventType::RECORDING_STARTED,
-                    "watchdog",
-                    "Recorder recovered successfully: " + recorder_id
-                );
-            }
         }
     }
 
@@ -213,7 +200,23 @@ bool Watchdog::checkHealth()
             << "[WATCHDOG] Storage limit reached."
             << std::endl;
 
-        healthy = false;
+        if (event_manager_ != nullptr)
+        {
+            event_manager_->publish(
+                EventType::APPLICATION_ERROR,
+                "watchdog",
+                "Storage limit reached. Enforcing storage policy."
+            );
+        }
+
+        if (!storage_manager_->enforceStorageLimit())
+        {
+            std::cerr
+                << "[WATCHDOG] Failed to enforce storage limit."
+                << std::endl;
+
+            healthy = false;
+        }
     }
 
     // ------------------------------------------------------------

@@ -10,7 +10,8 @@ StorageManager::StorageManager(
 )
     : recording_path_(recording_path),
       max_usage_percent_(max_usage_percent),
-      initialized_(false)
+      initialized_(false),
+      simulated_storage_limit_(false)
 {
 }
 
@@ -168,6 +169,11 @@ double StorageManager::getUsagePercent() const
 
 bool StorageManager::isStorageLimitReached() const
 {
+    if (simulated_storage_limit_)
+    {
+        return true;
+    }
+
     return getUsagePercent() >=
            static_cast<double>(max_usage_percent_);
 }
@@ -274,6 +280,15 @@ bool StorageManager::deleteOldestSegment()
                 << "Oldest segment deleted successfully."
                 << std::endl;
 
+            if (simulated_storage_limit_)
+            {
+                simulated_storage_limit_ = false;
+
+                std::cout
+                    << "[STORAGE TEST] Simulated storage pressure cleared."
+                    << std::endl;
+            }
+
             return true;
         }
 
@@ -344,4 +359,28 @@ const std::filesystem::path&
 StorageManager::getRecordingPath() const
 {
     return recording_path_;
+}
+
+bool StorageManager::simulateStorageLimit()
+{
+    if (!initialized_)
+    {
+        std::cerr
+            << "[STORAGE TEST] Storage manager is not initialized."
+            << std::endl;
+
+        return false;
+    }
+
+    std::cout
+        << "[STORAGE TEST] Simulating storage limit."
+        << std::endl;
+
+    simulated_storage_limit_ = true;
+
+    std::cout
+        << "[STORAGE TEST] Storage limit simulated."
+        << std::endl;
+
+    return true;
 }

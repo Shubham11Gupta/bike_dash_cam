@@ -27,10 +27,14 @@ public:
     bool enforceStorageLimit();
 
     const std::filesystem::path& getRecordingPath() const;
+    // POC test helper.
+    // Simulates storage limit being reached without filling the disk.
+    bool simulateStorageLimit();
 
 private:
     std::filesystem::path recording_path_;
     int max_usage_percent_;
 
     bool initialized_;
+    bool simulated_storage_limit_;
 };

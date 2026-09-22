@@ -426,7 +426,28 @@ int main()
             << "Watchdog health check passed."
             << std::endl;
     }
+    
+    std::this_thread::sleep_for(
+        std::chrono::seconds(10)
+    );
 
+    std::cout
+        << "[TEST] Simulating storage limit..."
+        << std::endl;
+
+    if (!storage_manager.simulateStorageLimit())
+    {
+        std::cerr
+            << "[TEST] Failed to simulate storage limit."
+            << std::endl;
+    }
+    else
+    {
+        std::cout
+            << "[TEST] Storage limit simulated."
+            << std::endl;
+    }
+/*
     // ============================================================
     // POC TEST: Simulate recorder failure
     // ============================================================
@@ -479,7 +500,7 @@ int main()
                 : "NO")
             << std::endl;
     }
-
+*/
     // ============================================================
     // Recording Loop
     // ============================================================

@@ -146,7 +146,7 @@ bool Recorder::start()
         std::cerr << "Failed to start GStreamer pipeline."
                   << std::endl;
 
-        stop();
+        forceStop();
 
         return false;
     }
@@ -247,31 +247,22 @@ bool Recorder::stop()
         << "Stopping recording gracefully."
         << std::endl;
 
-    // ------------------------------------------------------------
-    // Send EOS so GStreamer can finalize the current segment
-    // and write the MP4 metadata correctly.
-    // ------------------------------------------------------------
-
     if (!gst_element_send_event(
             pipeline_,
             gst_event_new_eos()))
     {
         std::cerr
-            << "Failed to send EOS to recorder."
+            << "[RECORDER] Failed to send EOS to recorder."
             << std::endl;
 
         success = false;
     }
     else
     {
-        // --------------------------------------------------------
-        // Wait for EOS or ERROR.
-        // --------------------------------------------------------
-
         GstMessage* message =
             gst_bus_timed_pop_filtered(
                 bus_,
-                GST_CLOCK_TIME_NONE,
+                3 * GST_SECOND,
                 static_cast<GstMessageType>(
                     GST_MESSAGE_EOS |
                     GST_MESSAGE_ERROR));
@@ -279,8 +270,7 @@ bool Recorder::stop()
         if (message == nullptr)
         {
             std::cerr
-                << "No EOS or ERROR message received "
-                << "while stopping recorder."
+                << "[RECORDER] EOS timeout while stopping."
                 << std::endl;
 
             success = false;
@@ -304,7 +294,7 @@ bool Recorder::stop()
                     &debug_info);
 
                 std::cerr
-                    << "Error while stopping recording: "
+                    << "[RECORDER] Error while stopping recording: "
                     << (error
                         ? error->message
                         : "Unknown error")
@@ -313,7 +303,7 @@ bool Recorder::stop()
                 if (debug_info != nullptr)
                 {
                     std::cerr
-                        << "Debug information: "
+                        << "[RECORDER] Debug information: "
                         << debug_info
                         << std::endl;
                 }
@@ -336,7 +326,20 @@ bool Recorder::stop()
     }
 
     // ------------------------------------------------------------
-    // Stop and release GStreamer pipeline.
+    // If graceful shutdown failed, force-stop the pipeline.
+    // ------------------------------------------------------------
+
+    if (!success)
+    {
+        std::cerr
+            << "[RECORDER] Falling back to force stop."
+            << std::endl;
+
+        return forceStop();
+    }
+
+    // ------------------------------------------------------------
+    // Graceful shutdown succeeded.
     // ------------------------------------------------------------
 
     gst_element_set_state(
@@ -352,7 +355,7 @@ bool Recorder::stop()
     gst_object_unref(pipeline_);
     pipeline_ = nullptr;
 
-    return success;
+    return true;
 }
 
 bool Recorder::isRunning() const
