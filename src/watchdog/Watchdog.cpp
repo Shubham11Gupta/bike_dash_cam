@@ -3,6 +3,12 @@
 #include <iostream>
 #include <unordered_set>
 
+namespace
+{
+    constexpr double MAX_CPU_USAGE_PERCENT = 90.0;
+    constexpr double MAX_MEMORY_USAGE_PERCENT = 90.0;
+}
+
 Watchdog::Watchdog(
     CameraManager* camera_manager,
     RecordingManager* recording_manager,
@@ -233,8 +239,11 @@ bool Watchdog::checkHealth()
     }
     else
     {
-        double cpu_usage = system_monitor_->getCpuUsage();
-        double memory_usage = system_monitor_->getMemoryUsage();
+        const double cpu_usage =
+            system_monitor_->getCpuUsage();
+
+        const double memory_usage =
+            system_monitor_->getMemoryUsage();
 
         std::cout
             << "[WATCHDOG] CPU: "
@@ -243,6 +252,48 @@ bool Watchdog::checkHealth()
             << memory_usage
             << "%"
             << std::endl;
+
+        if (cpu_usage < 0.0)
+        {
+            std::cerr
+                << "[WATCHDOG] Failed to read CPU usage."
+                << std::endl;
+
+            healthy = false;
+        }
+        else if (cpu_usage >= MAX_CPU_USAGE_PERCENT)
+        {
+            std::cerr
+                << "[WATCHDOG] CPU usage exceeds threshold: "
+                << cpu_usage
+                << "% >= "
+                << MAX_CPU_USAGE_PERCENT
+                << "%"
+                << std::endl;
+
+            healthy = false;
+        }
+
+        if (memory_usage < 0.0)
+        {
+            std::cerr
+                << "[WATCHDOG] Failed to read memory usage."
+                << std::endl;
+
+            healthy = false;
+        }
+        else if (memory_usage >= MAX_MEMORY_USAGE_PERCENT)
+        {
+            std::cerr
+                << "[WATCHDOG] Memory usage exceeds threshold: "
+                << memory_usage
+                << "% >= "
+                << MAX_MEMORY_USAGE_PERCENT
+                << "%"
+                << std::endl;
+
+            healthy = false;
+        }
     }
 
     // ------------------------------------------------------------

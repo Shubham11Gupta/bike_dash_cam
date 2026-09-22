@@ -6,6 +6,10 @@
 
 double SystemMonitor::getCpuUsage()
 {
+    if (simulate_cpu_failure_)
+    {
+        return 100.0;
+    }
     static ULONGLONG previous_idle = 0;
     static ULONGLONG previous_kernel = 0;
     static ULONGLONG previous_user = 0;
@@ -107,6 +111,11 @@ double SystemMonitor::getCpuUsage()
 
 double SystemMonitor::getMemoryUsage()
 {
+    if (simulate_memory_failure_)
+    {
+        return 100.0;
+    }
+
     MEMORYSTATUSEX memory_status;
 
     memory_status.dwLength =
@@ -124,4 +133,43 @@ double SystemMonitor::getMemoryUsage()
     return static_cast<double>(
         memory_status.dwMemoryLoad
     );
+}
+// ------------------------------------------------------------
+// Test failure simulation
+// ------------------------------------------------------------
+
+void SystemMonitor::simulateCpuFailure()
+{
+    std::cout
+        << "[SYSTEM TEST] Simulating CPU failure."
+        << std::endl;
+
+    simulate_cpu_failure_ = true;
+
+    std::cout
+        << "[SYSTEM TEST] CPU failure simulated."
+        << std::endl;
+}
+
+void SystemMonitor::simulateMemoryFailure()
+{
+    std::cout
+        << "[SYSTEM TEST] Simulating memory failure."
+        << std::endl;
+
+    simulate_memory_failure_ = true;
+
+    std::cout
+        << "[SYSTEM TEST] Memory failure simulated."
+        << std::endl;
+}
+
+void SystemMonitor::clearSimulatedFailure()
+{
+    simulate_cpu_failure_ = false;
+    simulate_memory_failure_ = false;
+
+    std::cout
+        << "[SYSTEM TEST] Simulated system failure cleared."
+        << std::endl;
 }

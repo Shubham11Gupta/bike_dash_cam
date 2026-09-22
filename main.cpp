@@ -29,11 +29,14 @@ int main()
         "Bike Dashcam POC-1 started."
     );
 
-    std::cout << "Bike Dashcam POC-1" << std::endl;
+    std::cout
+        << "Bike Dashcam POC-1"
+        << std::endl;
 
-    std::cout << "GStreamer version: "
-              << gst_version_string()
-              << std::endl;
+    std::cout
+        << "GStreamer version: "
+        << gst_version_string()
+        << std::endl;
 
     // ============================================================
     // Configuration
@@ -43,8 +46,9 @@ int main()
 
     if (!config_manager.load("config/config.yaml"))
     {
-        std::cerr << "Failed to load configuration."
-                  << std::endl;
+        std::cerr
+            << "Failed to load configuration."
+            << std::endl;
 
         gst_deinit();
         return 1;
@@ -62,37 +66,43 @@ int main()
     const auto& storage_config =
         config_manager.getStorageConfig();
 
-    std::cout << "Front camera: "
-              << front_camera_config.resolution
-              << " @ "
-              << front_camera_config.fps
-              << " FPS"
-              << std::endl;
+    std::cout
+        << "Front camera: "
+        << front_camera_config.resolution
+        << " @ "
+        << front_camera_config.fps
+        << " FPS"
+        << std::endl;
 
-    std::cout << "Rear camera: "
-              << rear_camera_config.resolution
-              << " @ "
-              << rear_camera_config.fps
-              << " FPS"
-              << std::endl;
+    std::cout
+        << "Rear camera: "
+        << rear_camera_config.resolution
+        << " @ "
+        << rear_camera_config.fps
+        << " FPS"
+        << std::endl;
 
-    std::cout << "Codec: "
-              << recording_config.codec
-              << std::endl;
+    std::cout
+        << "Codec: "
+        << recording_config.codec
+        << std::endl;
 
-    std::cout << "Segment duration: "
-              << recording_config.segment_duration
-              << " seconds"
-              << std::endl;
+    std::cout
+        << "Segment duration: "
+        << recording_config.segment_duration
+        << " seconds"
+        << std::endl;
 
-    std::cout << "Storage limit: "
-              << storage_config.max_usage_percent
-              << "%"
-              << std::endl;
+    std::cout
+        << "Storage limit: "
+        << storage_config.max_usage_percent
+        << "%"
+        << std::endl;
 
-    std::cout << "Recording path: "
-              << storage_config.recording_path
-              << std::endl;
+    std::cout
+        << "Recording path: "
+        << storage_config.recording_path
+        << std::endl;
 
     // ============================================================
     // Storage Manager
@@ -167,7 +177,7 @@ int main()
     SystemMonitor system_monitor;
 
     std::cout
-        << "Testing system monitor..."
+        << "System monitor initialized."
         << std::endl;
 
     std::cout
@@ -183,7 +193,8 @@ int main()
         << std::endl;
 
     std::this_thread::sleep_for(
-        std::chrono::seconds(2));
+        std::chrono::seconds(2)
+    );
 
     std::cout
         << "CPU usage sample 2: "
@@ -426,81 +437,7 @@ int main()
             << "Watchdog health check passed."
             << std::endl;
     }
-    
-    std::this_thread::sleep_for(
-        std::chrono::seconds(10)
-    );
 
-    std::cout
-        << "[TEST] Simulating storage limit..."
-        << std::endl;
-
-    if (!storage_manager.simulateStorageLimit())
-    {
-        std::cerr
-            << "[TEST] Failed to simulate storage limit."
-            << std::endl;
-    }
-    else
-    {
-        std::cout
-            << "[TEST] Storage limit simulated."
-            << std::endl;
-    }
-/*
-    // ============================================================
-    // POC TEST: Simulate recorder failure
-    // ============================================================
-
-    std::cout
-        << "[TEST] Simulating rear recorder failure..."
-        << std::endl;
-
-    if (recording_manager.simulateRecorderFailure("rear"))
-    {
-        std::cout
-            << "[TEST] Rear recorder failure simulated."
-            << std::endl;
-    }
-    else
-    {
-        std::cerr
-            << "[TEST] Failed to simulate rear recorder failure."
-            << std::endl;
-    }
-
-    // ============================================================
-    // Camera Failure Simulation
-    // ============================================================
-
-    std::cout
-        << "[TEST] Simulating rear camera failure..."
-        << std::endl;
-
-    Camera* rear_camera_base =
-        camera_manager.getCamera("rear");
-
-    SimulatedCamera* rear_simulated_camera =
-        dynamic_cast<SimulatedCamera*>(rear_camera_base);
-
-    if (rear_simulated_camera == nullptr)
-    {
-        std::cerr
-            << "[TEST] Failed to access simulated rear camera."
-            << std::endl;
-    }
-    else
-    {
-        rear_simulated_camera->simulateFailure();
-
-        std::cout
-            << "[TEST] Rear camera healthy after simulated failure: "
-            << (rear_simulated_camera->isHealthy()
-                ? "YES"
-                : "NO")
-            << std::endl;
-    }
-*/
     // ============================================================
     // Recording Loop
     // ============================================================
@@ -561,7 +498,8 @@ int main()
         // --------------------------------------------------------
 
         std::this_thread::sleep_for(
-            std::chrono::seconds(5));
+            std::chrono::seconds(5)
+        );
 
         // --------------------------------------------------------
         // Temporary POC stop condition
