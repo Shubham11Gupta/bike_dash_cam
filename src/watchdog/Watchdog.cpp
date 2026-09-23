@@ -271,7 +271,18 @@ bool Watchdog::checkHealth()
                 << "%"
                 << std::endl;
 
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::APPLICATION_ERROR,
+                    "watchdog",
+                    "CPU usage is above configured threshold."
+                );
+            }
+
             healthy = false;
+            // High CPU usage is treated as a warning,
+            // not an immediate fatal health failure.
         }
 
         if (memory_usage < 0.0)
@@ -292,7 +303,19 @@ bool Watchdog::checkHealth()
                 << "%"
                 << std::endl;
 
+            if (event_manager_ != nullptr)
+            {
+                event_manager_->publish(
+                    EventType::APPLICATION_ERROR,
+                    "watchdog",
+                    "Memory usage is above configured threshold."
+                );
+            }
+
             healthy = false;
+
+            // High memory usage is treated as a warning,
+            // not an immediate fatal health failure.
         }
     }
 

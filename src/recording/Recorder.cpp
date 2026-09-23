@@ -12,7 +12,9 @@ Recorder::Recorder(
       encoder_backend_(encoder_backend),
       segment_manager_(segment_manager),
       pipeline_(nullptr),
-      bus_(nullptr)
+      bus_(nullptr),
+      failed_(false),
+      stopping_(false)
 {
 }
 
@@ -87,6 +89,10 @@ bool Recorder::start()
 
         return false;
     }
+
+    failed_ = false;
+    stopping_ = false;
+
     const std::string output_pattern =
         segment_manager_->getOutputPattern();
 
@@ -187,14 +193,30 @@ bool Recorder::wait()
     switch (GST_MESSAGE_TYPE(message))
     {
         case GST_MESSAGE_EOS:
-            std::cout << "Recording completed."
-                      << std::endl;
+            if (stopping_)
+            {
+                std::cout
+                    << "Recording stopped normally."
+                    << std::endl;
 
-            success = true;
+                success = true;
+            }
+            else
+            {
+                std::cerr
+                    << "[RECORDER] Unexpected EOS received."
+                    << std::endl;
+
+                failed_ = true;
+                success = false;
+            }
+
             break;
 
         case GST_MESSAGE_ERROR:
         {
+            failed_ = true;
+
             GError* error = nullptr;
             gchar* debug_info = nullptr;
 
@@ -240,6 +262,9 @@ bool Recorder::stop()
 
         return false;
     }
+
+    stopping_ = true;
+
 
     bool success = true;
 
@@ -447,4 +472,14 @@ bool Recorder::forceStop()
         << std::endl;
 
     return true;
+}
+
+bool Recorder::hasFailed() const
+{
+    return failed_;
+}
+
+bool Recorder::isStopping() const
+{
+    return stopping_;
 }

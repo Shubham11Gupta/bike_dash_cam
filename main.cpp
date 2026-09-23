@@ -2,6 +2,8 @@
 #include <memory>
 #include <chrono>
 #include <thread>
+#include <atomic>
+#include <csignal>
 
 #include <gst/gst.h>
 
@@ -17,9 +19,24 @@
 #include "src/events/EventManager.hpp"
 #include "src/watchdog/Watchdog.hpp"
 
+namespace
+{
+    std::atomic<bool> shutdown_requested{false};
+
+    void handleSignal(int signal)
+    {
+        if (signal == SIGINT)
+        {
+            shutdown_requested = true;
+        }
+    }
+}
+
 int main()
 {
     gst_init(nullptr, nullptr);
+
+    std::signal(SIGINT, handleSignal);
 
     EventManager event_manager;
 
@@ -439,6 +456,50 @@ int main()
     }
 
     // ============================================================
+    // POC TEST: Camera Recovery
+    // ============================================================
+
+    std::cout
+        << "[TEST] Waiting before simulating camera failure..."
+        << std::endl;
+
+    std::this_thread::sleep_for(
+        std::chrono::seconds(10)
+    );
+
+    std::cout
+        << "[TEST] Simulating rear camera failure..."
+        << std::endl;
+
+    Camera* rear_camera_base =
+        camera_manager.getCamera("rear");
+
+    SimulatedCamera* rear_simulated_camera =
+        dynamic_cast<SimulatedCamera*>(rear_camera_base);
+
+    if (rear_simulated_camera == nullptr)
+    {
+        std::cerr
+            << "[TEST] Failed to access simulated rear camera."
+            << std::endl;
+    }
+    else
+    {
+        rear_simulated_camera->simulateFailure();
+
+        std::cout
+            << "[TEST] Rear camera failure simulated."
+            << std::endl;
+
+        std::cout
+            << "[TEST] Rear camera healthy: "
+            << (rear_simulated_camera->isHealthy()
+                ? "YES"
+                : "NO")
+            << std::endl;
+    }
+
+    // ============================================================
     // Recording Loop
     // ============================================================
 
@@ -450,6 +511,20 @@ int main()
 
     while (recording_active)
     {
+        // --------------------------------------------------------
+        // User shutdown check
+        // --------------------------------------------------------
+
+        if (shutdown_requested)
+        {
+            std::cout
+                << "[SYSTEM] Shutdown requested by user."
+                << std::endl;
+
+            recording_active = false;
+            break;
+        }
+
         // --------------------------------------------------------
         // Watchdog health check
         // --------------------------------------------------------
@@ -494,22 +569,13 @@ int main()
         }
 
         // --------------------------------------------------------
-        // POC runtime
+        // Wait before next watchdog cycle
         // --------------------------------------------------------
 
         std::this_thread::sleep_for(
             std::chrono::seconds(5)
         );
 
-        // --------------------------------------------------------
-        // Temporary POC stop condition
-        // --------------------------------------------------------
-
-        // For now, run the recording loop once and stop.
-        // This will later be replaced by a real shutdown
-        // mechanism / controller state.
-
-        recording_active = false;
     }
 
     // ============================================================
