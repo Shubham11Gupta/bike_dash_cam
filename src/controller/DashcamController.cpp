@@ -580,17 +580,41 @@ int DashcamController::run()
 
 void DashcamController::stopSystem()
 {
+    std::cout
+        << "[CONTROLLER] stopSystem() started."
+        << std::endl;
+
     if (recording_manager_ != nullptr)
     {
+        std::cout
+            << "[CONTROLLER] Stopping recordings..."
+            << std::endl;
+
         recording_manager_->stopAll();
+
+        std::cout
+            << "[CONTROLLER] Recordings stopped."
+            << std::endl;
     }
 
     if (camera_manager_ != nullptr)
     {
+        std::cout
+            << "[CONTROLLER] Stopping cameras..."
+            << std::endl;
+
         camera_manager_->stopAll();
+
+        std::cout
+            << "[CONTROLLER] Cameras stopped."
+            << std::endl;
     }
 
     running_ = false;
+
+    std::cout
+        << "[CONTROLLER] stopSystem() completed."
+        << std::endl;
 }
 
 void DashcamController::requestShutdown()
