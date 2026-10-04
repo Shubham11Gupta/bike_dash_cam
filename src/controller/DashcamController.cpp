@@ -7,6 +7,7 @@
 
 #include "../camera/SimulatedCamera.hpp"
 #include "../recording/Recorder.hpp"
+#include "../logging/Logger.hpp"
 
 DashcamController::DashcamController()
     : initialized_(false),
@@ -38,9 +39,7 @@ DashcamController::~DashcamController()
 
 bool DashcamController::initialize()
 {
-    std::cout
-        << "[CONTROLLER] Initializing dashcam..."
-        << std::endl;
+    Logger::info("[CONTROLLER] Initializing dashcam.");
 
     if (!initializeConfiguration())
     {
@@ -74,24 +73,18 @@ bool DashcamController::initialize()
 
     initialized_ = true;
 
-    std::cout
-        << "[CONTROLLER] Initialization complete."
-        << std::endl;
+    Logger::info("[CONTROLLER] Initialization complete.");
 
     return true;
 }
 
 bool DashcamController::initializeConfiguration()
 {
-    std::cout
-        << "[CONTROLLER] Loading configuration..."
-        << std::endl;
+    Logger::info("[CONTROLLER] Loading configuration...");
 
     if (!config_manager_.load("config/config.yaml"))
     {
-        std::cerr
-            << "[CONTROLLER] Failed to load configuration."
-            << std::endl;
+        Logger::error("[CONTROLLER] Failed to load configuration.");
 
         return false;
     }
@@ -108,43 +101,43 @@ bool DashcamController::initializeConfiguration()
     const auto& storage_config =
         config_manager_.getStorageConfig();
 
-    std::cout
-        << "Front camera: "
-        << front_camera_config.resolution
-        << " @ "
-        << front_camera_config.fps
-        << " FPS"
-        << std::endl;
+    Logger::info(
+        "Front camera: " +
+        front_camera_config.resolution +
+        " @ " +
+        std::to_string(front_camera_config.fps) +
+        " FPS"
+    );
 
-    std::cout
-        << "Rear camera: "
-        << rear_camera_config.resolution
-        << " @ "
-        << rear_camera_config.fps
-        << " FPS"
-        << std::endl;
+    Logger::info(
+        "Rear camera: " +
+        rear_camera_config.resolution +
+        " @ " +
+        std::to_string(rear_camera_config.fps) +
+        " FPS"
+    );
 
-    std::cout
-        << "Codec: "
-        << recording_config.codec
-        << std::endl;
+    Logger::info(
+        "Codec: " +
+        recording_config.codec
+    );
 
-    std::cout
-        << "Segment duration: "
-        << recording_config.segment_duration
-        << " seconds"
-        << std::endl;
+    Logger::info(
+        "Segment duration: " +
+        std::to_string(recording_config.segment_duration) +
+        " seconds"
+    );
 
-    std::cout
-        << "Storage limit: "
-        << storage_config.max_usage_percent
-        << "%"
-        << std::endl;
+    Logger::info(
+        "Storage limit: " +
+        std::to_string(storage_config.max_usage_percent) +
+        "%"
+    );
 
-    std::cout
-        << "Recording path: "
-        << storage_config.recording_path
-        << std::endl;
+    Logger::info(
+        "Recording path: " +
+        storage_config.recording_path
+    );
 
     return true;
 }
@@ -162,50 +155,42 @@ bool DashcamController::initializeStorage()
 
     if (!storage_manager_->initialize())
     {
-        std::cerr
-            << "[CONTROLLER] Storage initialization failed."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Storage initialization failed.");
         return false;
     }
 
-    std::cout
-        << "Storage total: "
-        << storage_manager_->getTotalSpace()
-        << " bytes"
-        << std::endl;
+    Logger::info(
+        "Storage total: " +
+        std::to_string(storage_manager_->getTotalSpace()) +
+        " bytes"
+    );
 
-    std::cout
-        << "Storage available: "
-        << storage_manager_->getAvailableSpace()
-        << " bytes"
-        << std::endl;
+    Logger::info(
+        "Storage available: " +
+        std::to_string(storage_manager_->getAvailableSpace()) +
+        " bytes"
+    );
 
-    std::cout
-        << "Storage used: "
-        << storage_manager_->getUsedSpace()
-        << " bytes"
-        << std::endl;
+    Logger::info(
+        "Storage used: " +
+        std::to_string(storage_manager_->getUsedSpace()) +
+        " bytes"
+    );
 
-    std::cout
-        << "Storage usage: "
-        << storage_manager_->getUsagePercent()
-        << "%"
-        << std::endl;
+    Logger::info(
+        "Storage usage: " +
+        std::to_string(storage_manager_->getUsagePercent()) +
+        "%"
+    );
 
-    std::cout
-        << "Storage writable: "
-        << (storage_manager_->isWritable()
-            ? "YES"
-            : "NO")
-        << std::endl;
+    Logger::info(
+        "Storage writable: " +
+        std::string(storage_manager_->isWritable() ? "YES" : "NO")
+    );
 
     if (!storage_manager_->enforceStorageLimit())
     {
-        std::cerr
-            << "[CONTROLLER] Storage limit enforcement failed."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Storage limit enforcement failed.");
         return false;
     }
 
@@ -217,9 +202,7 @@ bool DashcamController::initializeSystemMonitor()
     system_monitor_ =
         new SystemMonitor();
 
-    std::cout
-        << "System monitor initialized."
-        << std::endl;
+    Logger::info("[CONTROLLER] System monitor initialized.");
 
     return true;
 }
@@ -235,10 +218,7 @@ bool DashcamController::initializeCameras()
                 "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/front_sample.mp4"
             )))
     {
-        std::cerr
-            << "[CONTROLLER] Failed to add front camera."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to add front camera.");
         return false;
     }
 
@@ -248,10 +228,7 @@ bool DashcamController::initializeCameras()
                 "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/rear_sample.mp4"
             )))
     {
-        std::cerr
-            << "[CONTROLLER] Failed to add rear camera."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to add rear camera.");
         return false;
     }
 
@@ -275,10 +252,7 @@ bool DashcamController::initializeRecordings()
     if (front_camera == nullptr ||
         rear_camera == nullptr)
     {
-        std::cerr
-            << "[CONTROLLER] Failed to retrieve cameras."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to retrieve cameras.");
         return false;
     }
 
@@ -302,18 +276,13 @@ bool DashcamController::initializeRecordings()
 
     if (!front_segment_manager_->initialize())
     {
-        std::cerr
-            << "[CONTROLLER] Failed to initialize front segment manager."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to initialize front segment manager.");
         return false;
     }
 
     if (!rear_segment_manager_->initialize())
     {
-        std::cerr
-            << "[CONTROLLER] Failed to initialize rear segment manager."
-            << std::endl;
+        Logger::error("[CONTROLLER] Failed to initialize rear segment manager.");
 
         return false;
     }
@@ -322,15 +291,15 @@ bool DashcamController::initializeRecordings()
     // Camera sources
     // ------------------------------------------------------------
 
-    std::cout
-        << "Front camera source: "
-        << front_camera->getPipelineSource()
-        << std::endl;
+    Logger::info(
+        "Front camera source: " +
+        front_camera->getPipelineSource()
+    );
 
-    std::cout
-        << "Rear camera source: "
-        << rear_camera->getPipelineSource()
-        << std::endl;
+    Logger::info(
+        "Rear camera source: " +
+        rear_camera->getPipelineSource()
+    );
 
     // ------------------------------------------------------------
     // Recording manager
@@ -354,10 +323,7 @@ bool DashcamController::initializeRecordings()
                 &encoder_backend_,
                 front_segment_manager_)))
     {
-        std::cerr
-            << "[CONTROLLER] Failed to add front recorder."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to add front recorder.");
         return false;
     }
 
@@ -373,10 +339,7 @@ bool DashcamController::initializeRecordings()
                 &encoder_backend_,
                 rear_segment_manager_)))
     {
-        std::cerr
-            << "[CONTROLLER] Failed to add rear recorder."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to add rear recorder.");
         return false;
     }
 
@@ -401,34 +364,24 @@ bool DashcamController::startSystem()
 {
     if (!camera_manager_->startAll())
     {
-        std::cerr
-            << "[CONTROLLER] Failed to start cameras."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to start cameras.");
         return false;
     }
 
     if (!camera_manager_->areAllHealthy())
     {
-        std::cerr
-            << "[CONTROLLER] Camera health check failed."
-            << std::endl;
+        Logger::error("[CONTROLLER] Camera health check failed.");
 
         return false;
     }
 
     if (!recording_manager_->startAll())
     {
-        std::cerr
-            << "[CONTROLLER] Failed to start recordings."
-            << std::endl;
-
+        Logger::error("[CONTROLLER] Failed to start recordings.");
         return false;
     }
 
-    std::cout
-        << "Both recordings started."
-        << std::endl;
+    Logger::info("[CONTROLLER] Both recordings started.");
 
     system_started_ = true;
 
@@ -437,9 +390,7 @@ bool DashcamController::startSystem()
 
 void DashcamController::simulateCameraFailure()
 {
-    std::cout
-        << "[TEST] Simulating rear camera failure..."
-        << std::endl;
+    Logger::info("[TEST] Simulating rear camera failure...");
 
     Camera* rear_camera =
         camera_manager_->getCamera("rear");
@@ -449,34 +400,26 @@ void DashcamController::simulateCameraFailure()
 
     if (rear_simulated_camera == nullptr)
     {
-        std::cerr
-            << "[TEST] Failed to access simulated rear camera."
-            << std::endl;
+        Logger::error("[TEST] Failed to access simulated rear camera.");
 
         return;
     }
 
     rear_simulated_camera->simulateFailure();
 
-    std::cout
-        << "[TEST] Rear camera failure simulated."
-        << std::endl;
+    Logger::info("[TEST] Rear camera failure simulated.");
 
-    std::cout
-        << "[TEST] Rear camera healthy: "
-        << (rear_simulated_camera->isHealthy()
-            ? "YES"
-            : "NO")
-        << std::endl;
+    Logger::info(
+        "[TEST] Rear camera healthy: " +
+        std::string(rear_simulated_camera->isHealthy() ? "YES" : "NO")
+    );
 }
 
 int DashcamController::run()
 {
     if (!initialized_)
     {
-        std::cerr
-            << "[CONTROLLER] Cannot run before initialization."
-            << std::endl;
+        Logger::error("[CONTROLLER] Cannot run before initialization.");
 
         return 1;
     }
@@ -487,30 +430,22 @@ int DashcamController::run()
         return 1;
     }
 
-    std::cout
-        << "Running watchdog health check..."
-        << std::endl;
+    Logger::info("[CONTROLLER] Running watchdog health check...");
 
     if (!watchdog_->checkHealth())
     {
-        std::cerr
-            << "Watchdog detected a health issue."
-            << std::endl;
+        Logger::error("[CONTROLLER] Watchdog detected a health issue.");
     }
     else
     {
-        std::cout
-            << "Watchdog health check passed."
-            << std::endl;
+        Logger::info("[CONTROLLER] Watchdog health check passed.");
     }
 
     // ------------------------------------------------------------
     // Temporary POC test
     // ------------------------------------------------------------
 
-    std::cout
-        << "[TEST] Waiting before simulating camera failure..."
-        << std::endl;
+    Logger::info("[TEST] Waiting before simulating camera failure...");
 
     std::this_thread::sleep_for(
         std::chrono::seconds(10)
@@ -526,9 +461,7 @@ int DashcamController::run()
     // Recording loop
     // ------------------------------------------------------------
 
-    std::cout
-        << "Recording loop started."
-        << std::endl;
+    Logger::info("[CONTROLLER] Recording loop started.");
 
     running_ = true;
 
@@ -536,9 +469,7 @@ int DashcamController::run()
     {
         if (shutdown_requested_)
         {
-            std::cout
-                << "[SYSTEM] Shutdown requested by user."
-                << std::endl;
+            Logger::info("[SYSTEM] Shutdown requested by user.");
 
             running_ = false;
             break;
@@ -546,9 +477,7 @@ int DashcamController::run()
 
         if (!watchdog_->checkHealth())
         {
-            std::cerr
-                << "[WATCHDOG] Health check failed."
-                << std::endl;
+            Logger::error("[WATCHDOG] Health check failed.");
 
             event_manager_.publish(
                 EventType::APPLICATION_ERROR,
@@ -560,19 +489,17 @@ int DashcamController::run()
             break;
         }
 
-        std::cout
-            << "[Monitor] CPU: "
-            << system_monitor_->getCpuUsage()
-            << "% | Memory: "
-            << system_monitor_->getMemoryUsage()
-            << "%"
-            << std::endl;
+        Logger::info(
+            "[Monitor] CPU: " +
+            std::to_string(system_monitor_->getCpuUsage()) +
+            "% | Memory: " +
+            std::to_string(system_monitor_->getMemoryUsage()) +
+            "%"
+        );
 
         if (!recording_manager_->enforceStorageLimit())
         {
-            std::cerr
-                << "[Monitor] Storage limit enforcement failed."
-                << std::endl;
+            Logger::error("[Monitor] Storage limit enforcement failed.");
         }
 
         std::this_thread::sleep_for(
@@ -592,42 +519,30 @@ void DashcamController::stopSystem()
         return;
     }
 
-    std::cout
-        << "[CONTROLLER] stopSystem() started."
-        << std::endl;
+    Logger::info("[CONTROLLER] stopSystem() started.");
 
     if (recording_manager_ != nullptr)
     {
-        std::cout
-            << "[CONTROLLER] Stopping recordings..."
-            << std::endl;
+        Logger::info("[CONTROLLER] Stopping recordings...");
 
         recording_manager_->stopAll();
 
-        std::cout
-            << "[CONTROLLER] Recordings stopped."
-            << std::endl;
+        Logger::info("[CONTROLLER] Recordings stopped.");
     }
 
     if (camera_manager_ != nullptr)
     {
-        std::cout
-            << "[CONTROLLER] Stopping cameras..."
-            << std::endl;
+        Logger::info("[CONTROLLER] Stopping cameras...");
 
         camera_manager_->stopAll();
 
-        std::cout
-            << "[CONTROLLER] Cameras stopped."
-            << std::endl;
+        Logger::info("[CONTROLLER] Cameras stopped.");
     }
 
     system_started_ = false;
     running_ = false;
 
-    std::cout
-        << "[CONTROLLER] stopSystem() completed."
-        << std::endl;
+    Logger::info("[CONTROLLER] stopSystem() completed.");
 }
 
 void DashcamController::requestShutdown()
@@ -643,52 +558,34 @@ void DashcamController::simulateStorageLimit()
 
     if (storage_manager_ == nullptr)
     {
-        std::cerr
-            << "[TEST] Storage manager is unavailable."
-            << std::endl;
-
+        Logger::error("[TEST] Storage manager is unavailable.");
         return;
     }
 
     if (!storage_manager_->simulateStorageLimit())
     {
-        std::cerr
-            << "[TEST] Failed to simulate storage limit."
-            << std::endl;
-
+        Logger::error("[TEST] Failed to simulate storage limit.");
         return;
     }
 
-    std::cout
-        << "[TEST] Storage limit simulated successfully."
-        << std::endl;
+    Logger::info("[TEST] Storage limit simulated successfully.");
 }
 
 void DashcamController::simulateStorageDeletionFailure()
 {
-    std::cout
-        << "[TEST] Simulating storage deletion failure..."
-        << std::endl;
+    Logger::info("[TEST] Simulating storage deletion failure...");
 
     if (storage_manager_ == nullptr)
     {
-        std::cerr
-            << "[TEST] Storage manager unavailable."
-            << std::endl;
-
+        Logger::error("[TEST] Storage manager unavailable.");
         return;
     }
 
     if (!storage_manager_->simulateStorageDeletionFailure())
     {
-        std::cerr
-            << "[TEST] Failed to simulate storage deletion failure."
-            << std::endl;
-
+        Logger::error("[TEST] Failed to simulate storage deletion failure.");
         return;
     }
 
-    std::cout
-        << "[TEST] Storage deletion failure simulated successfully."
-        << std::endl;
+    Logger::info("[TEST] Storage deletion failure simulated successfully.");
 }

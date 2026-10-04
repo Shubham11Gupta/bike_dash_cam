@@ -4,6 +4,7 @@
 #include <gst/gst.h>
 
 #include "src/controller/DashcamController.hpp"
+#include "src/logging/Logger.hpp"
 
 namespace
 {
@@ -22,6 +23,18 @@ int main()
 {
     gst_init(nullptr, nullptr);
 
+    if (!Logger::initialize("INFO", "./logs/dashcam.log"))
+    {
+        std::cerr
+            << "Failed to initialize logger."
+            << std::endl;
+
+        gst_deinit();
+        return 1;
+    }
+
+    Logger::info("Dashcam application starting.");
+
     DashcamController dashcam_controller;
 
     controller = &dashcam_controller;
@@ -30,9 +43,7 @@ int main()
 
     if (!dashcam_controller.initialize())
     {
-        std::cerr
-            << "Dashcam initialization failed."
-            << std::endl;
+        Logger::error("Dashcam initialization failed.");
 
         gst_deinit();
         return 1;
@@ -45,9 +56,7 @@ int main()
 
     gst_deinit();
 
-    std::cout
-        << "Application finished."
-        << std::endl;
+    Logger::info("Application finished.");
 
     return result;
 }

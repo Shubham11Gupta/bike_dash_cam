@@ -1,20 +1,21 @@
 #include "EventManager.hpp"
 
-#include <iostream>
+#include "../logging/Logger.hpp"
 
 void EventManager::publish(
     EventType type,
     const std::string& source,
     const std::string& message)
 {
-    std::cout
-        << "[EVENT] "
-        << eventTypeToString(type)
-        << " | Source: "
-        << source
-        << " | "
-        << message
-        << std::endl;
+    const std::string formatted_message =
+        "[EVENT] " +
+        eventTypeToString(type) +
+        " | Source: " +
+        source +
+        " | " +
+        message;
+
+    Logger::info(formatted_message);
 }
 
 std::string EventManager::eventTypeToString(

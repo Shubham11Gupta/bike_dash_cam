@@ -4,6 +4,8 @@
 #include <iostream>
 #include <system_error>
 
+#include "../logging/Logger.hpp"
+
 StorageManager::StorageManager(
     const std::string& recording_path,
     int max_usage_percent
@@ -23,47 +25,52 @@ bool StorageManager::initialize()
         if (!std::filesystem::exists(recording_path_))
         {
             std::filesystem::create_directories(recording_path_);
+
+            Logger::info(
+                "Created storage directory: " +
+                recording_path_.string()
+            );
         }
 
         if (!std::filesystem::is_directory(recording_path_))
         {
-            std::cerr
-                << "Storage path is not a directory: "
-                << recording_path_
-                << std::endl;
+            Logger::error(
+                "Storage path is not a directory: " +
+                recording_path_.string()
+            );
 
             return false;
         }
 
         if (!isWritable())
         {
-            std::cerr
-                << "Storage path is not writable: "
-                << recording_path_
-                << std::endl;
+            Logger::error(
+                "Storage path is not writable: " +
+                recording_path_.string()
+            );
 
             return false;
         }
 
         initialized_ = true;
 
-        std::cout
-            << "Storage manager initialized."
-            << std::endl;
+        Logger::info(
+            "Storage manager initialized."
+        );
 
-        std::cout
-            << "Storage path: "
-            << recording_path_
-            << std::endl;
+        Logger::info(
+            "Storage path: " +
+            recording_path_.string()
+        );
 
         return true;
     }
     catch (const std::filesystem::filesystem_error& e)
     {
-        std::cerr
-            << "Storage initialization failed: "
-            << e.what()
-            << std::endl;
+        Logger::error(
+            "Storage initialization failed: " +
+            std::string(e.what())
+        );
 
         return false;
     }
@@ -188,9 +195,9 @@ bool StorageManager::deleteOldestSegment()
 {
     if (simulated_deletion_failure_)
     {
-        std::cout
-            << "[STORAGE TEST] Simulating inability to delete segments."
-            << std::endl;
+        Logger::warn(
+            "[STORAGE TEST] Simulating inability to delete segments."
+        );
 
         return false;
     }
@@ -271,31 +278,31 @@ bool StorageManager::deleteOldestSegment()
 
         if (!found_segment)
         {
-            std::cout
-                << "No recording segments found for deletion."
-                << std::endl;
+            Logger::warn(
+                "No recording segments found for deletion."
+            );
 
             return false;
         }
 
-        std::cout
-            << "Deleting oldest segment: "
-            << oldest_file
-            << std::endl;
+        Logger::info(
+            "Deleting oldest segment: " +
+            oldest_file.string()
+        );
 
         if (std::filesystem::remove(oldest_file))
         {
-            std::cout
-                << "Oldest segment deleted successfully."
-                << std::endl;
+            Logger::info(
+                "Oldest segment deleted successfully."
+            );
 
             if (simulated_storage_limit_)
             {
                 simulated_storage_limit_ = false;
 
-                std::cout
-                    << "[STORAGE TEST] Simulated storage pressure cleared."
-                    << std::endl;
+                Logger::info(
+                    "[STORAGE TEST] Simulated storage pressure cleared."
+                );
             }
 
             return true;
@@ -305,10 +312,10 @@ bool StorageManager::deleteOldestSegment()
     }
     catch (const std::filesystem::filesystem_error& e)
     {
-        std::cerr
-            << "Failed to delete oldest segment: "
-            << e.what()
-            << std::endl;
+       Logger::error(
+            "Failed to delete oldest segment: " +
+            std::string(e.what())
+        );
 
         return false;
     }
@@ -322,44 +329,44 @@ bool StorageManager::enforceStorageLimit()
 {
     if (!initialized_)
     {
-        std::cerr
-            << "Storage manager is not initialized."
-            << std::endl;
+        Logger::error(
+            "Storage manager is not initialized."
+        );
 
         return false;
     }
 
-    std::cout
-        << "Checking storage limit..."
-        << std::endl;
+    Logger::debug(
+        "Checking storage limit."
+    );
 
     while (isStorageLimitReached())
     {
-        std::cout
-            << "Storage limit reached."
-            << std::endl;
+        Logger::warn(
+            "Storage limit reached."
+        );
 
-        std::cout
-            << "Current storage usage: "
-            << getUsagePercent()
-            << "%"
-            << std::endl;
+        Logger::info(
+            "Current storage usage: " +
+            std::to_string(getUsagePercent()) +
+            "%"
+        );
 
         if (!deleteOldestSegment())
         {
-            std::cerr
-                << "Unable to free storage."
-                << std::endl;
+            Logger::error(
+                "Unable to free storage."
+            );
 
             return false;
         }
     }
 
-    std::cout
-        << "Storage usage is within configured limit: "
-        << getUsagePercent()
-        << "%"
-        << std::endl;
+    Logger::debug(
+        "Storage usage is within configured limit: " +
+        std::to_string(getUsagePercent()) +
+        "%"
+    );
 
     return true;
 }
@@ -374,22 +381,22 @@ bool StorageManager::simulateStorageLimit()
 {
     if (!initialized_)
     {
-        std::cerr
-            << "[STORAGE TEST] Storage manager is not initialized."
-            << std::endl;
+        Logger::error(
+            "[STORAGE TEST] Storage manager is not initialized."
+        );
 
         return false;
     }
 
-    std::cout
-        << "[STORAGE TEST] Simulating storage limit."
-        << std::endl;
+    Logger::info(
+        "[STORAGE TEST] Simulating storage limit."
+    );
 
     simulated_storage_limit_ = true;
 
-    std::cout
-        << "[STORAGE TEST] Storage limit simulated."
-        << std::endl;
+    Logger::info(
+        "[STORAGE TEST] Storage limit simulated."
+    );
 
     return true;
 }
@@ -398,22 +405,22 @@ bool StorageManager::simulateStorageDeletionFailure()
 {
     if (!initialized_)
     {
-        std::cerr
-            << "[STORAGE TEST] Storage manager is not initialized."
-            << std::endl;
+        Logger::error(
+            "[STORAGE TEST] Storage manager is not initialized."
+        );
 
         return false;
     }
 
-    std::cout
-        << "[STORAGE TEST] Simulating storage deletion failure."
-        << std::endl;
+    Logger::info(
+        "[STORAGE TEST] Simulating storage deletion failure."
+    );
 
     simulated_deletion_failure_ = true;
 
-    std::cout
-        << "[STORAGE TEST] Storage deletion failure simulated."
-        << std::endl;
+    Logger::info(
+        "[STORAGE TEST] Storage deletion failure simulated."
+    );
 
     return true;
 }

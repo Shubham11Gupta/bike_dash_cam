@@ -64,6 +64,7 @@ add_executable(bike-dashcam
     src/events/EventManager.cpp
     src/watchdog/Watchdog.cpp
     src/controller/DashcamController.cpp
+    src/logging/Logger.cpp
 )
 
 # Link GStreamer
