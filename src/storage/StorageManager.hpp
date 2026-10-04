@@ -30,6 +30,7 @@ public:
     // POC test helper.
     // Simulates storage limit being reached without filling the disk.
     bool simulateStorageLimit();
+    bool simulateStorageDeletionFailure();
 
 private:
     std::filesystem::path recording_path_;
@@ -37,4 +38,5 @@ private:
 
     bool initialized_;
     bool simulated_storage_limit_;
+    bool simulated_deletion_failure_;
 };

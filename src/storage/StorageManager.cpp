@@ -11,7 +11,8 @@ StorageManager::StorageManager(
     : recording_path_(recording_path),
       max_usage_percent_(max_usage_percent),
       initialized_(false),
-      simulated_storage_limit_(false)
+      simulated_storage_limit_(false),
+      simulated_deletion_failure_(false)
 {
 }
 
@@ -185,6 +186,14 @@ bool StorageManager::isStorageLimitReached() const
 
 bool StorageManager::deleteOldestSegment()
 {
+    if (simulated_deletion_failure_)
+    {
+        std::cout
+            << "[STORAGE TEST] Simulating inability to delete segments."
+            << std::endl;
+
+        return false;
+    }
     try
     {
         if (!std::filesystem::exists(recording_path_))
@@ -380,6 +389,30 @@ bool StorageManager::simulateStorageLimit()
 
     std::cout
         << "[STORAGE TEST] Storage limit simulated."
+        << std::endl;
+
+    return true;
+}
+
+bool StorageManager::simulateStorageDeletionFailure()
+{
+    if (!initialized_)
+    {
+        std::cerr
+            << "[STORAGE TEST] Storage manager is not initialized."
+            << std::endl;
+
+        return false;
+    }
+
+    std::cout
+        << "[STORAGE TEST] Simulating storage deletion failure."
+        << std::endl;
+
+    simulated_deletion_failure_ = true;
+
+    std::cout
+        << "[STORAGE TEST] Storage deletion failure simulated."
         << std::endl;
 
     return true;

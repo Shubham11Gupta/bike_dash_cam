@@ -11,6 +11,7 @@
 DashcamController::DashcamController()
     : initialized_(false),
       running_(false),
+      system_started_(false),
       storage_manager_(nullptr),
       system_monitor_(nullptr),
       camera_manager_(nullptr),
@@ -429,6 +430,8 @@ bool DashcamController::startSystem()
         << "Both recordings started."
         << std::endl;
 
+    system_started_ = true;
+
     return true;
 }
 
@@ -515,6 +518,10 @@ int DashcamController::run()
 
     simulateCameraFailure();
 
+    simulateStorageLimit();
+
+    simulateStorageDeletionFailure();
+
     // ------------------------------------------------------------
     // Recording loop
     // ------------------------------------------------------------
@@ -580,6 +587,11 @@ int DashcamController::run()
 
 void DashcamController::stopSystem()
 {
+    if (!system_started_)
+    {
+        return;
+    }
+
     std::cout
         << "[CONTROLLER] stopSystem() started."
         << std::endl;
@@ -610,6 +622,7 @@ void DashcamController::stopSystem()
             << std::endl;
     }
 
+    system_started_ = false;
     running_ = false;
 
     std::cout
@@ -620,4 +633,62 @@ void DashcamController::stopSystem()
 void DashcamController::requestShutdown()
 {
     shutdown_requested_ = true;
+}
+
+void DashcamController::simulateStorageLimit()
+{
+    std::cout
+        << "[TEST] Simulating storage limit..."
+        << std::endl;
+
+    if (storage_manager_ == nullptr)
+    {
+        std::cerr
+            << "[TEST] Storage manager is unavailable."
+            << std::endl;
+
+        return;
+    }
+
+    if (!storage_manager_->simulateStorageLimit())
+    {
+        std::cerr
+            << "[TEST] Failed to simulate storage limit."
+            << std::endl;
+
+        return;
+    }
+
+    std::cout
+        << "[TEST] Storage limit simulated successfully."
+        << std::endl;
+}
+
+void DashcamController::simulateStorageDeletionFailure()
+{
+    std::cout
+        << "[TEST] Simulating storage deletion failure..."
+        << std::endl;
+
+    if (storage_manager_ == nullptr)
+    {
+        std::cerr
+            << "[TEST] Storage manager unavailable."
+            << std::endl;
+
+        return;
+    }
+
+    if (!storage_manager_->simulateStorageDeletionFailure())
+    {
+        std::cerr
+            << "[TEST] Failed to simulate storage deletion failure."
+            << std::endl;
+
+        return;
+    }
+
+    std::cout
+        << "[TEST] Storage deletion failure simulated successfully."
+        << std::endl;
 }

@@ -35,6 +35,8 @@ private:
     void stopSystem();
 
     void simulateCameraFailure();
+    void simulateStorageLimit();
+    void simulateStorageDeletionFailure();
 
 private:
     // ------------------------------------------------------------
@@ -43,6 +45,7 @@ private:
 
     bool initialized_;
     bool running_;
+    bool system_started_;
 
     // ------------------------------------------------------------
     // Core services
