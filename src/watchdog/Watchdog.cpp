@@ -27,6 +27,25 @@ bool Watchdog::checkHealth()
 {
     bool healthy = true;
     std::unordered_set<std::string> recovered_recorders;
+    if (recording_manager_ != nullptr)
+    {
+        if (!recording_manager_->processRecorderEvents())
+        {
+            std::cerr
+                << "[WATCHDOG] Recorder event processing reported a failure."
+                << std::endl;
+
+            healthy = false;
+        }
+    }
+    else
+    {
+        std::cerr
+            << "[WATCHDOG] Recording manager is null."
+            << std::endl;
+
+        healthy = false;
+    }
 
     // ------------------------------------------------------------
     // Camera health and recovery

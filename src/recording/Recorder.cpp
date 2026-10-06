@@ -163,6 +163,83 @@ bool Recorder::start()
     return true;
 }
 
+bool Recorder::processEvents()
+{
+    if (pipeline_ == nullptr || bus_ == nullptr)
+    {
+        return false;
+    }
+
+    GstMessage* message =
+        gst_bus_pop_filtered(
+            bus_,
+            static_cast<GstMessageType>(
+                GST_MESSAGE_ERROR |
+                GST_MESSAGE_EOS
+            )
+        );
+
+    if (message == nullptr)
+    {
+        return true;
+    }
+
+    switch (GST_MESSAGE_TYPE(message))
+    {
+        case GST_MESSAGE_ERROR:
+        {
+            GError* error = nullptr;
+            gchar* debug_info = nullptr;
+
+            gst_message_parse_error(
+                message,
+                &error,
+                &debug_info
+            );
+
+            std::cerr
+                << "[RECORDER] GStreamer error: "
+                << (error ? error->message : "Unknown error")
+                << std::endl;
+
+            if (debug_info != nullptr)
+            {
+                std::cerr
+                    << "[RECORDER] Debug info: "
+                    << debug_info
+                    << std::endl;
+            }
+
+            if (error != nullptr)
+            {
+                g_error_free(error);
+            }
+
+            if (debug_info != nullptr)
+            {
+                g_free(debug_info);
+            }
+
+            gst_message_unref(message);
+            return false;
+        }
+
+        case GST_MESSAGE_EOS:
+        {
+            std::cout
+                << "[RECORDER] GStreamer pipeline reached EOS."
+                << std::endl;
+
+            gst_message_unref(message);
+            return false;
+        }
+
+        default:
+            gst_message_unref(message);
+            return true;
+    }
+}
+
 bool Recorder::wait()
 {
     if (bus_ == nullptr)

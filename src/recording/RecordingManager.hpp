@@ -28,6 +28,7 @@ public:
     bool stopAll();
 
     bool recoverRecorder(const std::string& id);
+    bool processRecorderEvents();
 
     bool enforceStorageLimit();
     bool monitorStorage();

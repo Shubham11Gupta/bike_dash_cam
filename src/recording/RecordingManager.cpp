@@ -145,6 +145,40 @@ bool RecordingManager::stopAll()
     return success;
 }
 
+bool RecordingManager::processRecorderEvents()
+{
+    bool healthy = true;
+
+    for (auto& entry : recorders_)
+    {
+        const std::string& id = entry.first;
+        Recorder* recorder = entry.second.get();
+
+        if (recorder == nullptr)
+        {
+            std::cerr
+                << "[RECORDING] Recorder is null: "
+                << id
+                << std::endl;
+
+            healthy = false;
+            continue;
+        }
+
+        if (!recorder->processEvents())
+        {
+            std::cerr
+                << "[RECORDING] Recorder event processing failed: "
+                << id
+                << std::endl;
+
+            healthy = false;
+        }
+    }
+
+    return healthy;
+}
+
 bool RecordingManager::enforceStorageLimit()
 {
     if (storage_manager_ == nullptr)

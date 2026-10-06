@@ -2,6 +2,9 @@
 
 #include <gst/gst.h>
 
+#include <string>
+#include <vector>
+
 #include "../configuration/ConfigManager.hpp"
 #include "../camera/Camera.hpp"
 #include "../platform/EncoderBackend.hpp"
@@ -23,6 +26,7 @@ public:
     bool wait();
     bool stop();
     bool forceStop();
+    bool processEvents();
 
     bool isRunning() const;
     bool hasFailed() const;
