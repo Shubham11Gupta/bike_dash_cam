@@ -12,7 +12,7 @@ public:
 
     bool initialize();
 
-    std::string getOutputPattern() const;
+    std::string getSegmentPath() const;
     std::string getCameraId() const;
 
     int getSegmentDuration() const;

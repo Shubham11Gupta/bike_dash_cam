@@ -43,17 +43,8 @@ gchar* Recorder::onFormatLocation(
         return nullptr;
     }
 
-    const std::string output_pattern =
-        recorder->segment_manager_->getOutputPattern();
-
-    char location[1024];
-
-    std::snprintf(
-        location,
-        sizeof(location),
-        output_pattern.c_str(),
-        fragment_id
-    );
+    const std::string location =
+        recorder->segment_manager_->getSegmentPath();
 
     std::cout
         << "[RECORDER] Creating segment "
@@ -67,12 +58,11 @@ gchar* Recorder::onFormatLocation(
         recorder->event_manager_->publish(
             EventType::SEGMENT_CREATED,
             recorder->segment_manager_->getCameraId(),
-            "Segment created: " +
-            std::string(location)
+            "Segment created: " + location
         );
     }
 
-    return g_strdup(location);
+    return g_strdup(location.c_str());
 }
 
 bool Recorder::start()
@@ -142,13 +132,6 @@ bool Recorder::start()
     failed_ = false;
     stopping_ = false;
 
-    const std::string output_pattern =
-        segment_manager_->getOutputPattern();
-
-    std::cout << "Recording output pattern: "
-            << output_pattern
-            << std::endl;
-
     const long long segment_duration_ns =
         static_cast<long long>(config_.segment_duration)
         * 1000000000LL;
@@ -160,7 +143,7 @@ bool Recorder::start()
         " ! " + encoder +
         " ! h264parse"
         " ! splitmuxsink name=segmenter"
-        " location=\"" + output_pattern + "\""
+        " location=\"placeholder.mp4\""
         " max-size-time=" + std::to_string(segment_duration_ns);
     
     std::cout << "GStreamer pipeline: "

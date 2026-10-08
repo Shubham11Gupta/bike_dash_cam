@@ -18,6 +18,48 @@ StorageManager::StorageManager(
 {
 }
 
+namespace
+{
+    bool isTimestampedRecording(const std::string& filename)
+    {
+        // Expected format:
+        // YYYYMMDD_HHMMSS.mp4
+        // Example:
+        // 20261008_185712.mp4
+
+        if (filename.size() != 19)
+        {
+            return false;
+        }
+
+        if (filename[8] != '_')
+        {
+            return false;
+        }
+
+        if (filename.compare(15, 4, ".mp4") != 0)
+        {
+            return false;
+        }
+
+        for (std::size_t i = 0; i < filename.size(); ++i)
+        {
+            // Skip separator and extension.
+            if (i == 8 || i >= 15)
+            {
+                continue;
+            }
+
+            if (filename[i] < '0' || filename[i] > '9')
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
 bool StorageManager::initialize()
 {
     try
@@ -201,6 +243,7 @@ bool StorageManager::deleteOldestSegment()
 
         return false;
     }
+
     try
     {
         if (!std::filesystem::exists(recording_path_))
@@ -209,7 +252,7 @@ bool StorageManager::deleteOldestSegment()
         }
 
         std::filesystem::path oldest_file;
-        std::filesystem::file_time_type oldest_time;
+        std::string oldest_filename;
 
         bool found_segment = false;
 
@@ -218,14 +261,21 @@ bool StorageManager::deleteOldestSegment()
          *
          * video_recordings/
          * ├── front/
-         * │   ├── segment-00.mp4
-         * │   ├── segment-01.mp4
+         * │   ├── 20261008_185712.mp4
+         * │   ├── 20261008_185717.mp4
          * │   └── ...
          * │
          * └── rear/
-         *     ├── segment-00.mp4
-         *     ├── segment-01.mp4
+         *     ├── 20261008_185712.mp4
+         *     ├── 20261008_185717.mp4
          *     └── ...
+         *
+         * Since filenames use:
+         *
+         * YYYYMMDD_HHMMSS.mp4
+         *
+         * lexicographical filename ordering is also chronological
+         * ordering.
          */
 
         for (const auto& entry :
@@ -238,40 +288,23 @@ bool StorageManager::deleteOldestSegment()
             }
 
             const auto& path = entry.path();
-
-            /*
-             * For now we only consider MP4 recording segments.
-             */
-            if (path.extension() != ".mp4")
-            {
-                continue;
-            }
-
-            const auto filename =
+            const std::string filename =
                 path.filename().string();
 
-            /*
-             * Only delete files that follow our
-             * segment naming convention.
-             *
-             * Example:
-             * segment-00.mp4
-             * segment-01.mp4
-             */
-
-            if (filename.rfind("segment-", 0) != 0)
+            if (!isTimestampedRecording(filename))
             {
                 continue;
             }
 
-            const auto write_time =
-                std::filesystem::last_write_time(path);
-
+            /*
+             * The smallest timestamped filename represents
+             * the oldest recording segment.
+             */
             if (!found_segment ||
-                write_time < oldest_time)
+                filename < oldest_filename)
             {
                 oldest_file = path;
-                oldest_time = write_time;
+                oldest_filename = filename;
                 found_segment = true;
             }
         }
@@ -279,7 +312,7 @@ bool StorageManager::deleteOldestSegment()
         if (!found_segment)
         {
             Logger::warn(
-                "No recording segments found for deletion."
+                "No timestamped recording segments found for deletion."
             );
 
             return false;
@@ -296,6 +329,10 @@ bool StorageManager::deleteOldestSegment()
                 "Oldest segment deleted successfully."
             );
 
+            /*
+             * Test-only behavior:
+             * clear the simulated limit after one successful deletion.
+             */
             if (simulated_storage_limit_)
             {
                 simulated_storage_limit_ = false;
@@ -308,11 +345,15 @@ bool StorageManager::deleteOldestSegment()
             return true;
         }
 
+        Logger::error(
+            "Failed to delete oldest segment."
+        );
+
         return false;
     }
     catch (const std::filesystem::filesystem_error& e)
     {
-       Logger::error(
+        Logger::error(
             "Failed to delete oldest segment: " +
             std::string(e.what())
         );

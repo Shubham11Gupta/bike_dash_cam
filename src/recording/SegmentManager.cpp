@@ -2,6 +2,10 @@
 
 #include <filesystem>
 #include <iostream>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
 SegmentManager::SegmentManager(
     const std::string& recording_path,
@@ -72,13 +76,35 @@ bool SegmentManager::initialize()
     return true;
 }
 
-std::string SegmentManager::getOutputPattern() const
-{
-    return camera_recording_path_ +
-           "/segment-%02d.mp4";
-}
-
 int SegmentManager::getSegmentDuration() const
 {
     return segment_duration_;
+}
+
+std::string SegmentManager::getSegmentPath() const
+{
+    auto now = std::chrono::system_clock::now();
+    std::time_t current_time =
+        std::chrono::system_clock::to_time_t(now);
+
+    std::tm local_time{};
+
+#ifdef _WIN32
+    localtime_s(&local_time, &current_time);
+#else
+    localtime_r(&current_time, &local_time);
+#endif
+
+    std::ostringstream timestamp;
+
+    timestamp
+        << std::put_time(
+            &local_time,
+            "%Y%m%d_%H%M%S"
+        );
+
+    return camera_recording_path_ +
+           "/" +
+           timestamp.str() +
+           ".mp4";
 }
