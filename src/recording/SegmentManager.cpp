@@ -13,6 +13,11 @@ SegmentManager::SegmentManager(
 {
 }
 
+std::string SegmentManager::getCameraId() const
+{
+    return camera_id_;
+}
+
 bool SegmentManager::initialize()
 {
     if (recording_path_.empty())

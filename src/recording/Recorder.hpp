@@ -9,6 +9,7 @@
 #include "../camera/Camera.hpp"
 #include "../platform/EncoderBackend.hpp"
 #include "SegmentManager.hpp"
+#include "../events/EventManager.hpp"
 
 class Recorder
 {
@@ -17,7 +18,8 @@ public:
         const RecordingConfig& config,
         Camera* camera,
         EncoderBackend* encoder_backend,
-        SegmentManager* segment_manager
+        SegmentManager* segment_manager,
+        EventManager* event_manager
     );
 
     ~Recorder();
@@ -37,11 +39,17 @@ public:
     bool simulateFailure();
 
 private:
+    static gchar* onFormatLocation(
+        GstElement* splitmux,
+        guint fragment_id,
+        gpointer user_data
+    );
     RecordingConfig config_;
 
     Camera* camera_;
     EncoderBackend* encoder_backend_;
     SegmentManager* segment_manager_;
+    EventManager* event_manager_;
 
     GstElement* pipeline_;
     GstBus* bus_;

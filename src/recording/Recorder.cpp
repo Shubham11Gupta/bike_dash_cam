@@ -1,16 +1,19 @@
 #include <iostream>
 #include <string>
+#include <cstdio>
 #include "Recorder.hpp"
 
 Recorder::Recorder(
     const RecordingConfig& config,
     Camera* camera,
     EncoderBackend* encoder_backend,
-    SegmentManager* segment_manager)
+    SegmentManager* segment_manager,
+    EventManager* event_manager)
     : config_(config),
       camera_(camera),
       encoder_backend_(encoder_backend),
       segment_manager_(segment_manager),
+      event_manager_(event_manager),
       pipeline_(nullptr),
       bus_(nullptr),
       failed_(false),
@@ -24,6 +27,52 @@ Recorder::~Recorder()
     {
         stop();
     }
+}
+
+gchar* Recorder::onFormatLocation(
+    GstElement* splitmux,
+    guint fragment_id,
+    gpointer user_data)
+{
+    Recorder* recorder =
+        static_cast<Recorder*>(user_data);
+
+    if (recorder == nullptr ||
+        recorder->segment_manager_ == nullptr)
+    {
+        return nullptr;
+    }
+
+    const std::string output_pattern =
+        recorder->segment_manager_->getOutputPattern();
+
+    char location[1024];
+
+    std::snprintf(
+        location,
+        sizeof(location),
+        output_pattern.c_str(),
+        fragment_id
+    );
+
+    std::cout
+        << "[RECORDER] Creating segment "
+        << fragment_id
+        << ": "
+        << location
+        << std::endl;
+
+    if (recorder->event_manager_ != nullptr)
+    {
+        recorder->event_manager_->publish(
+            EventType::SEGMENT_CREATED,
+            recorder->segment_manager_->getCameraId(),
+            "Segment created: " +
+            std::string(location)
+        );
+    }
+
+    return g_strdup(location);
 }
 
 bool Recorder::start()
@@ -110,7 +159,7 @@ bool Recorder::start()
         " ! videoconvert"
         " ! " + encoder +
         " ! h264parse"
-        " ! splitmuxsink"
+        " ! splitmuxsink name=segmenter"
         " location=\"" + output_pattern + "\""
         " max-size-time=" + std::to_string(segment_duration_ns);
     
@@ -130,14 +179,40 @@ bool Recorder::start()
         if (error != nullptr)
         {
             std::cerr << " Error: "
-                      << error->message
-                      << std::endl;
+                    << error->message
+                    << std::endl;
 
             g_error_free(error);
         }
 
         return false;
     }
+
+    GstElement* splitmux =
+        gst_bin_get_by_name(
+            GST_BIN(pipeline_),
+            "segmenter"
+        );
+
+    if (splitmux == nullptr)
+    {
+        std::cerr
+            << "Failed to find splitmuxsink element."
+            << std::endl;
+
+        forceStop();
+
+        return false;
+    }
+
+    g_signal_connect(
+        splitmux,
+        "format-location",
+        G_CALLBACK(Recorder::onFormatLocation),
+        this
+    );
+
+    gst_object_unref(splitmux);
 
     bus_ = gst_element_get_bus(pipeline_);
 
@@ -201,6 +276,8 @@ bool Recorder::processEvents()
                 << "[RECORDER] GStreamer error: "
                 << (error ? error->message : "Unknown error")
                 << std::endl;
+
+            failed_ = true;
 
             if (debug_info != nullptr)
             {

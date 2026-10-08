@@ -321,7 +321,8 @@ bool DashcamController::initializeRecordings()
                 recording_config,
                 front_camera,
                 &encoder_backend_,
-                front_segment_manager_)))
+                front_segment_manager_,
+                &event_manager_)))
     {
         Logger::error("[CONTROLLER] Failed to add front recorder.");
         return false;
@@ -337,7 +338,8 @@ bool DashcamController::initializeRecordings()
                 recording_config,
                 rear_camera,
                 &encoder_backend_,
-                rear_segment_manager_)))
+                rear_segment_manager_,
+                &event_manager_)))
     {
         Logger::error("[CONTROLLER] Failed to add rear recorder.");
         return false;
@@ -452,6 +454,13 @@ int DashcamController::run()
     );
 
     simulateCameraFailure();
+
+    Logger::info("[TEST] Simulating rear recorder failure...");
+
+    if (!recording_manager_->simulateRecorderFailure("rear"))
+    {
+        Logger::error("[TEST] Failed to simulate rear recorder failure.");
+    }
 
     simulateStorageLimit();
 

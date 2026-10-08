@@ -355,7 +355,8 @@ RecordingManager::getUnhealthyRecorders() const
         const std::string& id = entry.first;
         const Recorder* recorder = entry.second.get();
 
-        if (recorder == nullptr || !recorder->isRunning())
+        if (recorder == nullptr ||
+            (!recorder->isRunning() && !recorder->isStopping()))
         {
             unhealthy_recorders.push_back(id);
         }

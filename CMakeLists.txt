@@ -71,6 +71,7 @@ add_executable(bike-dashcam
 target_link_libraries(bike-dashcam
     PRIVATE
         gstreamer-1.0.lib
+        gobject-2.0.lib
         glib-2.0.lib
         yaml-cpp::yaml-cpp
     )
