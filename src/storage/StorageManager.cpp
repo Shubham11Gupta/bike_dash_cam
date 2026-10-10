@@ -1,7 +1,6 @@
 #include "StorageManager.hpp"
 
 #include <fstream>
-#include <iostream>
 #include <system_error>
 
 #include "../logging/Logger.hpp"

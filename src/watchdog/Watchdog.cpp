@@ -1,7 +1,8 @@
 #include "Watchdog.hpp"
 
-#include <iostream>
 #include <unordered_set>
+
+#include "../logging/Logger.hpp"
 
 namespace
 {
@@ -27,22 +28,23 @@ bool Watchdog::checkHealth()
 {
     bool healthy = true;
     std::unordered_set<std::string> recovered_recorders;
+
     if (recording_manager_ != nullptr)
     {
         if (!recording_manager_->processRecorderEvents())
         {
-            std::cerr
-                << "[WATCHDOG] Recorder event processing reported a failure."
-                << std::endl;
+            Logger::error(
+                "[WATCHDOG] Recorder event processing reported a failure."
+            );
 
             healthy = false;
         }
     }
     else
     {
-        std::cerr
-            << "[WATCHDOG] Recording manager is null."
-            << std::endl;
+        Logger::error(
+            "[WATCHDOG] Recording manager is null."
+        );
 
         healthy = false;
     }
@@ -53,9 +55,9 @@ bool Watchdog::checkHealth()
 
     if (camera_manager_ == nullptr)
     {
-        std::cerr
-            << "[WATCHDOG] CameraManager unavailable."
-            << std::endl;
+        Logger::error(
+            "[WATCHDOG] CameraManager unavailable."
+        );
 
         healthy = false;
     }
@@ -66,10 +68,10 @@ bool Watchdog::checkHealth()
 
         for (const auto& camera_id : unhealthy_cameras)
         {
-            std::cerr
-                << "[WATCHDOG] Camera unhealthy: "
-                << camera_id
-                << std::endl;
+            Logger::error(
+                "[WATCHDOG] Camera unhealthy: " +
+                camera_id
+            );
 
             if (event_manager_ != nullptr)
             {
@@ -91,10 +93,10 @@ bool Watchdog::checkHealth()
 
             if (!camera_recovered)
             {
-                std::cerr
-                    << "[WATCHDOG] Camera recovery failed: "
-                    << camera_id
-                    << std::endl;
+                Logger::error(
+                    "[WATCHDOG] Camera recovery failed: " +
+                    camera_id
+                );
 
                 if (event_manager_ != nullptr)
                 {
@@ -124,9 +126,9 @@ bool Watchdog::checkHealth()
 
             if (recording_manager_ == nullptr)
             {
-                std::cerr
-                    << "[WATCHDOG] RecordingManager unavailable."
-                    << std::endl;
+                Logger::error(
+                    "[WATCHDOG] RecordingManager unavailable."
+                );
 
                 healthy = false;
                 continue;
@@ -134,10 +136,10 @@ bool Watchdog::checkHealth()
 
             if (!recording_manager_->recoverRecorder(camera_id))
             {
-                std::cerr
-                    << "[WATCHDOG] Recording recovery failed: "
-                    << camera_id
-                    << std::endl;
+                Logger::error(
+                    "[WATCHDOG] Recording recovery failed: " +
+                    camera_id
+                );
 
                 healthy = false;
                 continue;
@@ -162,9 +164,9 @@ bool Watchdog::checkHealth()
 
     if (recording_manager_ == nullptr)
     {
-        std::cerr
-            << "[WATCHDOG] RecordingManager unavailable."
-            << std::endl;
+        Logger::error(
+            "[WATCHDOG] RecordingManager unavailable."
+        );
 
         healthy = false;
     }
@@ -175,15 +177,16 @@ bool Watchdog::checkHealth()
 
         for (const auto& recorder_id : unhealthy_recorders)
         {
-            if (recovered_recorders.find(recorder_id) != recovered_recorders.end())
+            if (recovered_recorders.find(recorder_id) !=
+                recovered_recorders.end())
             {
                 continue;
             }
 
-            std::cerr
-                << "[WATCHDOG] Recorder unhealthy: "
-                << recorder_id
-                << std::endl;
+            Logger::error(
+                "[WATCHDOG] Recorder unhealthy: " +
+                recorder_id
+            );
 
             if (event_manager_ != nullptr)
             {
@@ -196,10 +199,10 @@ bool Watchdog::checkHealth()
 
             if (!recording_manager_->recoverRecorder(recorder_id))
             {
-                std::cerr
-                    << "[WATCHDOG] Recorder recovery failed: "
-                    << recorder_id
-                    << std::endl;
+                Logger::error(
+                    "[WATCHDOG] Recorder recovery failed: " +
+                    recorder_id
+                );
 
                 healthy = false;
                 continue;
@@ -213,17 +216,17 @@ bool Watchdog::checkHealth()
 
     if (storage_manager_ == nullptr)
     {
-        std::cerr
-            << "[WATCHDOG] StorageManager unavailable."
-            << std::endl;
+        Logger::error(
+            "[WATCHDOG] StorageManager unavailable."
+        );
 
         healthy = false;
     }
     else if (storage_manager_->isStorageLimitReached())
     {
-        std::cerr
-            << "[WATCHDOG] Storage limit reached."
-            << std::endl;
+        Logger::warn(
+            "[WATCHDOG] Storage limit reached."
+        );
 
         if (event_manager_ != nullptr)
         {
@@ -236,9 +239,9 @@ bool Watchdog::checkHealth()
 
         if (!storage_manager_->enforceStorageLimit())
         {
-            std::cerr
-                << "[WATCHDOG] Failed to enforce storage limit."
-                << std::endl;
+            Logger::error(
+                "[WATCHDOG] Failed to enforce storage limit."
+            );
 
             healthy = false;
         }
@@ -250,9 +253,9 @@ bool Watchdog::checkHealth()
 
     if (system_monitor_ == nullptr)
     {
-        std::cerr
-            << "[WATCHDOG] SystemMonitor unavailable."
-            << std::endl;
+        Logger::error(
+            "[WATCHDOG] SystemMonitor unavailable."
+        );
 
         healthy = false;
     }
@@ -264,31 +267,31 @@ bool Watchdog::checkHealth()
         const double memory_usage =
             system_monitor_->getMemoryUsage();
 
-        std::cout
-            << "[WATCHDOG] CPU: "
-            << cpu_usage
-            << "% | Memory: "
-            << memory_usage
-            << "%"
-            << std::endl;
+        Logger::info(
+            "[WATCHDOG] CPU: " +
+            std::to_string(cpu_usage) +
+            "% | Memory: " +
+            std::to_string(memory_usage) +
+            "%"
+        );
 
         if (cpu_usage < 0.0)
         {
-            std::cerr
-                << "[WATCHDOG] Failed to read CPU usage."
-                << std::endl;
+            Logger::error(
+                "[WATCHDOG] Failed to read CPU usage."
+            );
 
             healthy = false;
         }
         else if (cpu_usage >= MAX_CPU_USAGE_PERCENT)
         {
-            std::cerr
-                << "[WATCHDOG] CPU usage exceeds threshold: "
-                << cpu_usage
-                << "% >= "
-                << MAX_CPU_USAGE_PERCENT
-                << "%"
-                << std::endl;
+            Logger::warn(
+                "[WATCHDOG] CPU usage exceeds threshold: " +
+                std::to_string(cpu_usage) +
+                "% >= " +
+                std::to_string(MAX_CPU_USAGE_PERCENT) +
+                "%"
+            );
 
             if (event_manager_ != nullptr)
             {
@@ -300,27 +303,28 @@ bool Watchdog::checkHealth()
             }
 
             healthy = false;
+
             // High CPU usage is treated as a warning,
             // not an immediate fatal health failure.
         }
 
         if (memory_usage < 0.0)
         {
-            std::cerr
-                << "[WATCHDOG] Failed to read memory usage."
-                << std::endl;
+            Logger::error(
+                "[WATCHDOG] Failed to read memory usage."
+            );
 
             healthy = false;
         }
         else if (memory_usage >= MAX_MEMORY_USAGE_PERCENT)
         {
-            std::cerr
-                << "[WATCHDOG] Memory usage exceeds threshold: "
-                << memory_usage
-                << "% >= "
-                << MAX_MEMORY_USAGE_PERCENT
-                << "%"
-                << std::endl;
+            Logger::warn(
+                "[WATCHDOG] Memory usage exceeds threshold: " +
+                std::to_string(memory_usage) +
+                "% >= " +
+                std::to_string(MAX_MEMORY_USAGE_PERCENT) +
+                "%"
+            );
 
             if (event_manager_ != nullptr)
             {
@@ -344,15 +348,15 @@ bool Watchdog::checkHealth()
 
     if (healthy)
     {
-        std::cout
-            << "[WATCHDOG] System healthy."
-            << std::endl;
+        Logger::info(
+            "[WATCHDOG] System healthy."
+        );
     }
     else
     {
-        std::cerr
-            << "[WATCHDOG] System health check failed."
-            << std::endl;
+        Logger::error(
+            "[WATCHDOG] System health check failed."
+        );
     }
 
     return healthy;

@@ -1,11 +1,12 @@
 #include "SegmentManager.hpp"
 
 #include <filesystem>
-#include <iostream>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+
+#include "../logging/Logger.hpp"
 
 SegmentManager::SegmentManager(
     const std::string& recording_path,
@@ -26,24 +27,27 @@ bool SegmentManager::initialize()
 {
     if (recording_path_.empty())
     {
-        std::cerr << "Recording path cannot be empty."
-                  << std::endl;
+        Logger::error(
+            "Recording path cannot be empty."
+        );
 
         return false;
     }
 
     if (camera_id_.empty())
     {
-        std::cerr << "Camera ID cannot be empty."
-                  << std::endl;
+        Logger::error(
+            "Camera ID cannot be empty."
+        );
 
         return false;
     }
 
     if (segment_duration_ <= 0)
     {
-        std::cerr << "Segment duration must be greater than zero."
-                  << std::endl;
+        Logger::error(
+            "Segment duration must be greater than zero."
+        );
 
         return false;
     }
@@ -58,20 +62,23 @@ bool SegmentManager::initialize()
     }
     catch (const std::filesystem::filesystem_error& error)
     {
-        std::cerr << "Failed to create recording directory: "
-                  << error.what()
-                  << std::endl;
+        Logger::error(
+            "Failed to create recording directory: " +
+            std::string(error.what())
+        );
 
         return false;
     }
 
-    std::cout << "Segment manager initialized for: "
-              << camera_id_
-              << std::endl;
+    Logger::info(
+        "Segment manager initialized for: " +
+        camera_id_
+    );
 
-    std::cout << "Recording directory: "
-              << camera_recording_path_
-              << std::endl;
+    Logger::info(
+        "Recording directory: " +
+        camera_recording_path_
+    );
 
     return true;
 }

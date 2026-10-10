@@ -1,6 +1,6 @@
 #include "CameraManager.hpp"
 
-#include <iostream>
+#include "../logging/Logger.hpp"
 
 CameraManager::CameraManager(
     EventManager* event_manager)
@@ -8,9 +8,9 @@ CameraManager::CameraManager(
 {
     if (event_manager_ == nullptr)
     {
-        std::cerr
-            << "Warning: CameraManager created without EventManager."
-            << std::endl;
+        Logger::warn(
+            "CameraManager created without EventManager."
+        );
     }
 }
 
@@ -20,25 +20,25 @@ bool CameraManager::addCamera(
 {
     if (id.empty())
     {
-        std::cerr << "Camera ID cannot be empty." << std::endl;
+        Logger::error("Camera ID cannot be empty.");
         return false;
     }
 
     if (!camera)
     {
-        std::cerr << "Cannot add null camera." << std::endl;
+        Logger::error("Cannot add null camera.");
         return false;
     }
 
     if (cameras_.find(id) != cameras_.end())
     {
-        std::cerr << "Camera already exists: " << id << std::endl;
+        Logger::error("Camera already exists: " + id);
         return false;
     }
 
     cameras_[id] = std::move(camera);
 
-    std::cout << "Camera added: " << id << std::endl;
+    Logger::info("Camera added: " + id);
 
     return true;
 }
@@ -61,17 +61,15 @@ bool CameraManager::startAll()
 
     for (auto& entry : cameras_)
     {
-        std::cout
-            << "Starting camera: "
-            << entry.first
-            << std::endl;
+        Logger::info(
+            "Starting camera: " + entry.first
+        );
 
         if (!entry.second->start())
         {
-            std::cerr
-                << "Failed to start camera: "
-                << entry.first
-                << std::endl;
+            Logger::error(
+                "Failed to start camera: " + entry.first
+            );
 
             if (event_manager_ != nullptr)
             {
@@ -106,17 +104,15 @@ bool CameraManager::stopAll()
 
     for (auto& entry : cameras_)
     {
-        std::cout
-            << "Stopping camera: "
-            << entry.first
-            << std::endl;
+        Logger::info(
+            "Stopping camera: " + entry.first
+        );
 
         if (!entry.second->stop())
         {
-            std::cerr
-                << "Failed to stop camera: "
-                << entry.first
-                << std::endl;
+            Logger::error(
+                "Failed to stop camera: " + entry.first
+            );
 
             if (event_manager_ != nullptr)
             {
@@ -184,10 +180,9 @@ bool CameraManager::recoverCamera(const std::string& id)
 
     if (it == cameras_.end())
     {
-        std::cerr
-            << "[CAMERA] Cannot recover unknown camera: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[CAMERA] Cannot recover unknown camera: " + id
+        );
 
         return false;
     }
@@ -196,26 +191,23 @@ bool CameraManager::recoverCamera(const std::string& id)
 
     if (camera == nullptr)
     {
-        std::cerr
-            << "[CAMERA] Camera object is null: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[CAMERA] Camera object is null: " + id
+        );
 
         return false;
     }
 
-    std::cout
-        << "[CAMERA] Attempting recovery: "
-        << id
-        << std::endl;
+    Logger::info(
+        "[CAMERA] Attempting recovery: " + id
+    );
 
     // Stop the camera first.
     if (!camera->stop())
     {
-        std::cerr
-            << "[CAMERA] Failed to stop camera during recovery: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[CAMERA] Failed to stop camera during recovery: " + id
+        );
 
         return false;
     }
@@ -223,28 +215,25 @@ bool CameraManager::recoverCamera(const std::string& id)
     // Start it again.
     if (!camera->start())
     {
-        std::cerr
-            << "[CAMERA] Failed to restart camera: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[CAMERA] Failed to restart camera: " + id
+        );
 
         return false;
     }
 
     if (!camera->isHealthy())
     {
-        std::cerr
-            << "[CAMERA] Camera still unhealthy after recovery: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[CAMERA] Camera still unhealthy after recovery: " + id
+        );
 
         return false;
     }
 
-    std::cout
-        << "[CAMERA] Camera recovery successful: "
-        << id
-        << std::endl;
+    Logger::info(
+        "[CAMERA] Camera recovery successful: " + id
+    );
 
     return true;
 }

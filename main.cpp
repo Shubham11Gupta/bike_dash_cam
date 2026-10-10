@@ -1,5 +1,4 @@
 #include <csignal>
-#include <iostream>
 
 #include <gst/gst.h>
 
@@ -25,10 +24,6 @@ int main()
 
     if (!Logger::initialize("INFO", "./logs/dashcam.log"))
     {
-        std::cerr
-            << "Failed to initialize logger."
-            << std::endl;
-
         gst_deinit();
         return 1;
     }

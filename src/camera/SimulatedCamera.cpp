@@ -1,6 +1,6 @@
 #include "SimulatedCamera.hpp"
 
-#include <iostream>
+#include "../logging/Logger.hpp"
 
 SimulatedCamera::SimulatedCamera(const std::string& file_path)
     : file_path_(file_path),
@@ -12,16 +12,18 @@ bool SimulatedCamera::start()
 {
     if (file_path_.empty())
     {
-        std::cerr << "Simulated camera file path is empty."
-                  << std::endl;
+        Logger::error(
+            "Simulated camera file path is empty."
+        );
 
         return false;
     }
 
     running_ = true;
 
-    std::cout << "Simulated camera started."
-              << std::endl;
+    Logger::info(
+        "Simulated camera started."
+    );
 
     return true;
 }
@@ -30,8 +32,9 @@ bool SimulatedCamera::stop()
 {
     running_ = false;
 
-    std::cout << "Simulated camera stopped."
-              << std::endl;
+    Logger::info(
+        "Simulated camera stopped."
+    );
 
     return true;
 }
@@ -48,9 +51,9 @@ std::string SimulatedCamera::getPipelineSource() const
 
 void SimulatedCamera::simulateFailure()
 {
-    std::cout
-        << "[TEST] Simulating camera failure."
-        << std::endl;
+    Logger::info(
+        "[TEST] Simulating camera failure."
+    );
 
     running_ = false;
 }

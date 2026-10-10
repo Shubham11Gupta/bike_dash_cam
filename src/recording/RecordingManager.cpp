@@ -1,6 +1,6 @@
 #include "RecordingManager.hpp"
 
-#include <iostream>
+#include "../logging/Logger.hpp"
 
 RecordingManager::RecordingManager(
     StorageManager* storage_manager,
@@ -10,16 +10,16 @@ RecordingManager::RecordingManager(
 {
     if (storage_manager_ == nullptr)
     {
-        std::cerr
-            << "Warning: RecordingManager created without StorageManager."
-            << std::endl;
+        Logger::warn(
+            "RecordingManager created without StorageManager."
+        );
     }
 
     if (event_manager_ == nullptr)
     {
-        std::cerr
-            << "Warning: RecordingManager created without EventManager."
-            << std::endl;
+        Logger::warn(
+            "RecordingManager created without EventManager."
+        );
     }
 }
 
@@ -29,38 +29,36 @@ bool RecordingManager::addRecorder(
 {
     if (id.empty())
     {
-        std::cerr
-            << "Recorder ID cannot be empty."
-            << std::endl;
+        Logger::error(
+            "Recorder ID cannot be empty."
+        );
 
         return false;
     }
 
     if (!recorder)
     {
-        std::cerr
-            << "Cannot add null recorder."
-            << std::endl;
+        Logger::error(
+            "Cannot add null recorder."
+        );
 
         return false;
     }
 
     if (recorders_.find(id) != recorders_.end())
     {
-        std::cerr
-            << "Recorder already exists: "
-            << id
-            << std::endl;
+        Logger::error(
+            "Recorder already exists: " + id
+        );
 
         return false;
     }
 
     recorders_[id] = std::move(recorder);
 
-    std::cout
-        << "Recorder added: "
-        << id
-        << std::endl;
+    Logger::info(
+        "Recorder added: " + id
+    );
 
     return true;
 }
@@ -84,17 +82,15 @@ bool RecordingManager::startAll()
 
     for (auto& entry : recorders_)
     {
-        std::cout
-            << "Starting recorder: "
-            << entry.first
-            << std::endl;
+        Logger::info(
+            "Starting recorder: " + entry.first
+        );
 
         if (!entry.second->start())
         {
-            std::cerr
-                << "Failed to start recorder: "
-                << entry.first
-                << std::endl;
+            Logger::error(
+                "Failed to start recorder: " + entry.first
+            );
 
             success = false;
         }
@@ -120,10 +116,9 @@ bool RecordingManager::stopAll()
 
     for (auto& entry : recorders_)
     {
-        std::cout
-            << "Stopping recorder: "
-            << entry.first
-            << std::endl;
+        Logger::info(
+            "Stopping recorder: " + entry.first
+        );
 
         if (!entry.second->stop())
         {
@@ -156,10 +151,9 @@ bool RecordingManager::processRecorderEvents()
 
         if (recorder == nullptr)
         {
-            std::cerr
-                << "[RECORDING] Recorder is null: "
-                << id
-                << std::endl;
+            Logger::error(
+                "[RECORDING] Recorder is null: " + id
+            );
 
             healthy = false;
             continue;
@@ -167,10 +161,10 @@ bool RecordingManager::processRecorderEvents()
 
         if (!recorder->processEvents())
         {
-            std::cerr
-                << "[RECORDING] Recorder event processing failed: "
-                << id
-                << std::endl;
+            Logger::error(
+                "[RECORDING] Recorder event processing failed: " +
+                id
+            );
 
             healthy = false;
         }
@@ -183,45 +177,49 @@ bool RecordingManager::enforceStorageLimit()
 {
     if (storage_manager_ == nullptr)
     {
-        std::cerr
-            << "Cannot enforce storage limit: "
-            << "StorageManager is not available."
-            << std::endl;
+        Logger::error(
+            "Cannot enforce storage limit: " +
+            std::string("StorageManager is not available.")
+        );
 
         return false;
     }
 
-    std::cout
-        << "Checking storage limit..."
-        << std::endl;
+    Logger::info(
+        "Checking storage limit..."
+    );
 
     while (storage_manager_->isStorageLimitReached())
     {
-        std::cout
-            << "Storage limit reached."
-            << std::endl;
+        Logger::warn(
+            "Storage limit reached."
+        );
 
-        std::cout
-            << "Current storage usage: "
-            << storage_manager_->getUsagePercent()
-            << "%"
-            << std::endl;
+        Logger::info(
+            "Current storage usage: " +
+            std::to_string(
+                storage_manager_->getUsagePercent()
+            ) +
+            "%"
+        );
 
         if (!storage_manager_->deleteOldestSegment())
         {
-            std::cerr
-                << "Unable to free storage."
-                << std::endl;
+            Logger::error(
+                "Unable to free storage."
+            );
 
             return false;
         }
     }
 
-    std::cout
-        << "Storage usage is within configured limit: "
-        << storage_manager_->getUsagePercent()
-        << "%"
-        << std::endl;
+    Logger::info(
+        "Storage usage is within configured limit: " +
+        std::to_string(
+            storage_manager_->getUsagePercent()
+        ) +
+        "%"
+    );
 
     return true;
 }
@@ -230,10 +228,10 @@ bool RecordingManager::monitorStorage()
 {
     if (storage_manager_ == nullptr)
     {
-        std::cerr
-            << "Cannot monitor storage: "
-            << "StorageManager is not available."
-            << std::endl;
+        Logger::error(
+            "Cannot monitor storage: " +
+            std::string("StorageManager is not available.")
+        );
 
         return false;
     }
@@ -241,34 +239,35 @@ bool RecordingManager::monitorStorage()
     const double usage =
         storage_manager_->getUsagePercent();
 
-    std::cout
-        << "Storage monitor: "
-        << usage
-        << "%"
-        << std::endl;
+    Logger::info(
+        "Storage monitor: " +
+        std::to_string(usage) +
+        "%"
+    );
 
     if (storage_manager_->isStorageLimitReached())
     {
-        std::cout
-            << "Storage limit reached. "
-            << "Enforcing storage policy..."
-            << std::endl;
+        Logger::warn(
+            "Storage limit reached. "
+            "Enforcing storage policy..."
+        );
 
         return enforceStorageLimit();
     }
 
     return true;
 }
-bool RecordingManager::recoverRecorder(const std::string& id)
+
+bool RecordingManager::recoverRecorder(
+    const std::string& id)
 {
     auto it = recorders_.find(id);
 
     if (it == recorders_.end())
     {
-        std::cerr
-            << "[RECORDING] Recorder not found: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[RECORDING] Recorder not found: " + id
+        );
 
         return false;
     }
@@ -277,18 +276,16 @@ bool RecordingManager::recoverRecorder(const std::string& id)
 
     if (recorder == nullptr)
     {
-        std::cerr
-            << "[RECORDING] Recorder is null: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[RECORDING] Recorder is null: " + id
+        );
 
         return false;
     }
 
-    std::cout
-        << "[RECORDING] Recovering recorder: "
-        << id
-        << std::endl;
+    Logger::info(
+        "[RECORDING] Recovering recorder: " + id
+    );
 
     // ------------------------------------------------------------
     // Stop the existing recorder if it is still running.
@@ -298,20 +295,19 @@ bool RecordingManager::recoverRecorder(const std::string& id)
     {
         if (!recorder->stop())
         {
-            std::cerr
-                << "[RECORDING] Failed to stop recorder during recovery: "
-                << id
-                << std::endl;
+            Logger::error(
+                "[RECORDING] Failed to stop recorder during recovery: " +
+                id
+            );
 
             return false;
         }
     }
     else
     {
-        std::cout
-            << "[RECORDING] Recorder is already stopped: "
-            << id
-            << std::endl;
+        Logger::info(
+            "[RECORDING] Recorder is already stopped: " + id
+        );
     }
 
     // ------------------------------------------------------------
@@ -320,18 +316,16 @@ bool RecordingManager::recoverRecorder(const std::string& id)
 
     if (!recorder->start())
     {
-        std::cerr
-            << "[RECORDING] Failed to restart recorder: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[RECORDING] Failed to restart recorder: " + id
+        );
 
         return false;
     }
 
-    std::cout
-        << "[RECORDING] Recorder recovery successful: "
-        << id
-        << std::endl;
+    Logger::info(
+        "[RECORDING] Recorder recovery successful: " + id
+    );
 
     if (event_manager_ != nullptr)
     {
@@ -372,10 +366,9 @@ bool RecordingManager::simulateRecorderFailure(
 
     if (it == recorders_.end())
     {
-        std::cerr
-            << "[RECORDING TEST] Recorder not found: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[RECORDING TEST] Recorder not found: " + id
+        );
 
         return false;
     }
@@ -384,10 +377,9 @@ bool RecordingManager::simulateRecorderFailure(
 
     if (recorder == nullptr)
     {
-        std::cerr
-            << "[RECORDING TEST] Recorder is null: "
-            << id
-            << std::endl;
+        Logger::error(
+            "[RECORDING TEST] Recorder is null: " + id
+        );
 
         return false;
     }

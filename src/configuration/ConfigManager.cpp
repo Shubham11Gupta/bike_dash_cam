@@ -1,6 +1,6 @@
 #include "ConfigManager.hpp"
 
-#include <iostream>
+#include "../logging/Logger.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -120,22 +120,25 @@ bool ConfigManager::load(const std::string& file_path)
 
         if (!validate())
         {
-            std::cerr << "Configuration validation failed."
-                      << std::endl;
+            Logger::error(
+                "Configuration validation failed."
+            );
 
             return false;
         }
 
-        std::cout << "Configuration loaded and validated successfully."
-                  << std::endl;
+        Logger::info(
+            "Configuration loaded and validated successfully."
+        );
 
         return true;
     }
     catch (const YAML::Exception& exception)
     {
-        std::cerr << "Failed to load configuration: "
-                  << exception.what()
-                  << std::endl;
+        Logger::error(
+            "Failed to load configuration: " +
+            std::string(exception.what())
+        );
 
         return false;
     }
@@ -148,16 +151,18 @@ bool ConfigManager::validate() const
     {
         if (front_camera_config_.resolution.empty())
         {
-            std::cerr << "Invalid front camera resolution."
-                      << std::endl;
+            Logger::error(
+                "Invalid front camera resolution."
+            );
 
             return false;
         }
 
         if (front_camera_config_.fps <= 0)
         {
-            std::cerr << "Invalid front camera FPS."
-                      << std::endl;
+            Logger::error(
+                "Invalid front camera FPS."
+            );
 
             return false;
         }
@@ -168,16 +173,18 @@ bool ConfigManager::validate() const
     {
         if (rear_camera_config_.resolution.empty())
         {
-            std::cerr << "Invalid rear camera resolution."
-                      << std::endl;
+            Logger::error(
+                "Invalid rear camera resolution."
+            );
 
             return false;
         }
 
         if (rear_camera_config_.fps <= 0)
         {
-            std::cerr << "Invalid rear camera FPS."
-                      << std::endl;
+            Logger::error(
+                "Invalid rear camera FPS."
+            );
 
             return false;
         }
@@ -187,8 +194,9 @@ bool ConfigManager::validate() const
     if (!front_camera_config_.enabled &&
         !rear_camera_config_.enabled)
     {
-        std::cerr << "At least one camera must be enabled."
-                  << std::endl;
+        Logger::error(
+            "At least one camera must be enabled."
+        );
 
         return false;
     }
@@ -196,9 +204,9 @@ bool ConfigManager::validate() const
     // Codec
     if (recording_config_.codec != "h264")
     {
-        std::cerr << "Unsupported recording codec: "
-                  << recording_config_.codec
-                  << std::endl;
+        Logger::error(
+            "Unsupported recording codec: " + recording_config_.codec
+        );
 
         return false;
     }
@@ -206,8 +214,9 @@ bool ConfigManager::validate() const
     // Segment duration
     if (recording_config_.segment_duration <= 0)
     {
-        std::cerr << "Invalid segment duration."
-                  << std::endl;
+        Logger::error(
+            "Invalid segment duration."
+        );
 
         return false;
     }
@@ -216,8 +225,9 @@ bool ConfigManager::validate() const
     if (storage_config_.max_usage_percent <= 0 ||
         storage_config_.max_usage_percent > 100)
     {
-        std::cerr << "Invalid storage usage limit."
-                  << std::endl;
+        Logger::error(
+            "Invalid storage usage limit."
+        );
 
         return false;
     }
@@ -225,8 +235,9 @@ bool ConfigManager::validate() const
     // Recording path
     if (storage_config_.recording_path.empty())
     {
-        std::cerr << "Recording path cannot be empty."
-                  << std::endl;
+        Logger::error(
+            "Recording path cannot be empty."
+        );
 
         return false;
     }

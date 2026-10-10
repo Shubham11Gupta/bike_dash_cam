@@ -1,6 +1,6 @@
 #include "SoftwareEncoderBackend.hpp"
 
-#include <iostream>
+#include "../logging/Logger.hpp"
 
 std::string SoftwareEncoderBackend::getEncoderElement(
     const std::string& codec) const
@@ -10,9 +10,9 @@ std::string SoftwareEncoderBackend::getEncoderElement(
         return "x264enc key-int-max=30";
     }
 
-    std::cerr << "Unsupported codec: "
-              << codec
-              << std::endl;
+    Logger::error(
+        "Unsupported codec: " + codec
+    );
 
     return "";
 }

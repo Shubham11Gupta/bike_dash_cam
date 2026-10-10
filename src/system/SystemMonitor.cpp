@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-#include <iostream>
+#include "../logging/Logger.hpp"
 
 double SystemMonitor::getCpuUsage()
 {
@@ -10,6 +10,7 @@ double SystemMonitor::getCpuUsage()
     {
         return 100.0;
     }
+
     static ULONGLONG previous_idle = 0;
     static ULONGLONG previous_kernel = 0;
     static ULONGLONG previous_user = 0;
@@ -24,9 +25,9 @@ double SystemMonitor::getCpuUsage()
             &kernel_time,
             &user_time))
     {
-        std::cerr
-            << "Failed to retrieve CPU usage."
-            << std::endl;
+        Logger::error(
+            "Failed to retrieve CPU usage."
+        );
 
         return -1.0;
     }
@@ -123,9 +124,9 @@ double SystemMonitor::getMemoryUsage()
 
     if (!GlobalMemoryStatusEx(&memory_status))
     {
-        std::cerr
-            << "Failed to retrieve memory usage."
-            << std::endl;
+        Logger::error(
+            "Failed to retrieve memory usage."
+        );
 
         return -1.0;
     }
@@ -134,34 +135,35 @@ double SystemMonitor::getMemoryUsage()
         memory_status.dwMemoryLoad
     );
 }
+
 // ------------------------------------------------------------
 // Test failure simulation
 // ------------------------------------------------------------
 
 void SystemMonitor::simulateCpuFailure()
 {
-    std::cout
-        << "[SYSTEM TEST] Simulating CPU failure."
-        << std::endl;
+    Logger::info(
+        "[SYSTEM TEST] Simulating CPU failure."
+    );
 
     simulate_cpu_failure_ = true;
 
-    std::cout
-        << "[SYSTEM TEST] CPU failure simulated."
-        << std::endl;
+    Logger::info(
+        "[SYSTEM TEST] CPU failure simulated."
+    );
 }
 
 void SystemMonitor::simulateMemoryFailure()
 {
-    std::cout
-        << "[SYSTEM TEST] Simulating memory failure."
-        << std::endl;
+    Logger::info(
+        "[SYSTEM TEST] Simulating memory failure."
+    );
 
     simulate_memory_failure_ = true;
 
-    std::cout
-        << "[SYSTEM TEST] Memory failure simulated."
-        << std::endl;
+    Logger::info(
+        "[SYSTEM TEST] Memory failure simulated."
+    );
 }
 
 void SystemMonitor::clearSimulatedFailure()
@@ -169,7 +171,7 @@ void SystemMonitor::clearSimulatedFailure()
     simulate_cpu_failure_ = false;
     simulate_memory_failure_ = false;
 
-    std::cout
-        << "[SYSTEM TEST] Simulated system failure cleared."
-        << std::endl;
+    Logger::info(
+        "[SYSTEM TEST] Simulated system failure cleared."
+    );
 }

@@ -1,7 +1,6 @@
 #include "DashcamController.hpp"
 
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <thread>
 
@@ -561,9 +560,9 @@ void DashcamController::requestShutdown()
 
 void DashcamController::simulateStorageLimit()
 {
-    std::cout
-        << "[TEST] Simulating storage limit..."
-        << std::endl;
+    Logger::info(
+        "[TEST] Simulating storage limit..."
+    );
 
     if (storage_manager_ == nullptr)
     {

@@ -77,7 +77,7 @@ void Logger::warn(const std::string& message)
 
 void Logger::error(const std::string& message)
 {
-    log(LogLevel::ERROR, message);
+    log(LogLevel::ERROR_LEVEL, message);
 }
 
 void Logger::log(
@@ -157,7 +157,7 @@ LogLevel Logger::parseLogLevel(
 
     if (log_level == "ERROR")
     {
-        return LogLevel::ERROR;
+        return LogLevel::ERROR_LEVEL;
     }
 
     return LogLevel::INFO;
@@ -177,7 +177,7 @@ std::string Logger::levelToString(
         case LogLevel::WARN:
             return "WARN";
 
-        case LogLevel::ERROR:
+        case LogLevel::ERROR_LEVEL:
             return "ERROR";
 
         default:
