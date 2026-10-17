@@ -421,7 +421,6 @@ int DashcamController::run()
     if (!initialized_)
     {
         Logger::error("[CONTROLLER] Cannot run before initialization.");
-
         return 1;
     }
 
@@ -443,27 +442,15 @@ int DashcamController::run()
     }
 
     // ------------------------------------------------------------
-    // Temporary POC test
+    // Temporary POC test: Normal recording shutdown
     // ------------------------------------------------------------
 
-    Logger::info("[TEST] Waiting before simulating camera failure...");
+    Logger::info("[TEST] Running without injected failures.");
 
-    std::this_thread::sleep_for(
-        std::chrono::seconds(10)
-    );
+    running_ = true;
 
-    simulateCameraFailure();
-
-    Logger::info("[TEST] Simulating rear recorder failure...");
-
-    if (!recording_manager_->simulateRecorderFailure("rear"))
-    {
-        Logger::error("[TEST] Failed to simulate rear recorder failure.");
-    }
-
-    simulateStorageLimit();
-
-    simulateStorageDeletionFailure();
+    const auto test_start_time = std::chrono::steady_clock::now();
+    const auto test_duration = std::chrono::seconds(15);
 
     // ------------------------------------------------------------
     // Recording loop
@@ -471,21 +458,34 @@ int DashcamController::run()
 
     Logger::info("[CONTROLLER] Recording loop started.");
 
-    running_ = true;
-
     while (running_)
     {
         if (shutdown_requested_)
         {
             Logger::info("[SYSTEM] Shutdown requested by user.");
-
             running_ = false;
             break;
         }
 
+        // End the test after the configured recording period.
+        const auto elapsed_time =
+            std::chrono::steady_clock::now() - test_start_time;
+
+        if (elapsed_time >= test_duration)
+        {
+            Logger::info(
+                "[TEST] Normal recording test period completed."
+            );
+
+            break;
+        }
+
+        // Monitor the system while recording.
         if (!watchdog_->checkHealth())
         {
-            Logger::error("[WATCHDOG] Health check failed.");
+            Logger::error(
+                "[WATCHDOG] Health check failed during normal recording."
+            );
 
             event_manager_.publish(
                 EventType::APPLICATION_ERROR,
@@ -494,7 +494,9 @@ int DashcamController::run()
             );
 
             running_ = false;
-            break;
+            stopSystem();
+
+            return 1;
         }
 
         Logger::info(
@@ -505,21 +507,27 @@ int DashcamController::run()
             "%"
         );
 
+        // Enforce the normal storage policy without injecting failures.
         if (!recording_manager_->enforceStorageLimit())
         {
-            Logger::error("[Monitor] Storage limit enforcement failed.");
+            Logger::error(
+                "[Monitor] Storage limit enforcement failed."
+            );
         }
 
         std::this_thread::sleep_for(
-            std::chrono::seconds(5)
+            std::chrono::seconds(1)
         );
     }
+
+    // ------------------------------------------------------------
+    // Normal shutdown
+    // ------------------------------------------------------------
 
     stopSystem();
 
     return 0;
 }
-
 void DashcamController::stopSystem()
 {
     if (!system_started_)
