@@ -301,9 +301,6 @@ bool Watchdog::checkHealth()
                     "CPU usage is above configured threshold."
                 );
             }
-
-            healthy = false;
-
             // High CPU usage is treated as a warning,
             // not an immediate fatal health failure.
         }
