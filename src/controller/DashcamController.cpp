@@ -208,26 +208,70 @@ bool DashcamController::initializeSystemMonitor()
 
 bool DashcamController::initializeCameras()
 {
+    Logger::info("[CONTROLLER] Initializing cameras.");
+
     camera_manager_ =
         new CameraManager(&event_manager_);
 
-    if (!camera_manager_->addCamera(
-            "front",
-            std::make_unique<SimulatedCamera>(
-                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/front_sample.mp4"
-            )))
+    // Retrieve camera configurations.
+    const CameraConfig& front_config =
+        config_manager_.getFrontCameraConfig();
+
+    const CameraConfig& rear_config =
+        config_manager_.getRearCameraConfig();
+
+    // Initialize front camera if enabled.
+    if (front_config.enabled)
     {
-        Logger::error("[CONTROLLER] Failed to add front camera.");
-        return false;
+        if (!camera_manager_->addCamera(
+                "front",
+                std::make_unique<SimulatedCamera>(
+                    "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/front_sample.mp4")))
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to add front camera.");
+
+            return false;
+        }
+
+        Logger::info(
+            "[CONTROLLER] Front camera initialized.");
+    }
+    else
+    {
+        Logger::info(
+            "[CONTROLLER] Front camera disabled by configuration.");
     }
 
-    if (!camera_manager_->addCamera(
-            "rear",
-            std::make_unique<SimulatedCamera>(
-                "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/rear_sample.mp4"
-            )))
+    // Initialize rear camera if enabled.
+    if (rear_config.enabled)
     {
-        Logger::error("[CONTROLLER] Failed to add rear camera.");
+        if (!camera_manager_->addCamera(
+                "rear",
+                std::make_unique<SimulatedCamera>(
+                    "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/rear_sample.mp4")))
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to add rear camera.");
+
+            return false;
+        }
+
+        Logger::info(
+            "[CONTROLLER] Rear camera initialized.");
+    }
+    else
+    {
+        Logger::info(
+            "[CONTROLLER] Rear camera disabled by configuration.");
+    }
+
+    // Ensure at least one camera is enabled.
+    if (!front_config.enabled && !rear_config.enabled)
+    {
+        Logger::error(
+            "[CONTROLLER] No cameras are enabled in configuration.");
+
         return false;
     }
 
@@ -242,63 +286,106 @@ bool DashcamController::initializeRecordings()
     const auto& storage_config =
         config_manager_.getStorageConfig();
 
-    Camera* front_camera =
-        camera_manager_->getCamera("front");
+    const auto& front_config =
+        config_manager_.getFrontCameraConfig();
 
-    Camera* rear_camera =
-        camera_manager_->getCamera("rear");
+    const auto& rear_config =
+        config_manager_.getRearCameraConfig();
 
-    if (front_camera == nullptr ||
-        rear_camera == nullptr)
+    // ------------------------------------------------------------
+    // Retrieve enabled cameras
+    // ------------------------------------------------------------
+
+    Camera* front_camera = nullptr;
+    Camera* rear_camera = nullptr;
+
+    if (front_config.enabled)
     {
-        Logger::error("[CONTROLLER] Failed to retrieve cameras.");
-        return false;
+        front_camera =
+            camera_manager_->getCamera("front");
+
+        if (front_camera == nullptr)
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to retrieve enabled front camera.");
+
+            return false;
+        }
+    }
+
+    if (rear_config.enabled)
+    {
+        rear_camera =
+            camera_manager_->getCamera("rear");
+
+        if (rear_camera == nullptr)
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to retrieve enabled rear camera.");
+
+            return false;
+        }
     }
 
     // ------------------------------------------------------------
     // Segment managers
     // ------------------------------------------------------------
 
-    front_segment_manager_ =
-        new SegmentManager(
-            storage_config.recording_path,
-            "front",
-            recording_config.segment_duration
-        );
-
-    rear_segment_manager_ =
-        new SegmentManager(
-            storage_config.recording_path,
-            "rear",
-            recording_config.segment_duration
-        );
-
-    if (!front_segment_manager_->initialize())
+    if (front_camera != nullptr)
     {
-        Logger::error("[CONTROLLER] Failed to initialize front segment manager.");
-        return false;
+        front_segment_manager_ =
+            new SegmentManager(
+                storage_config.recording_path,
+                "front",
+                recording_config.segment_duration
+            );
+
+        if (!front_segment_manager_->initialize())
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to initialize front segment manager.");
+
+            return false;
+        }
     }
 
-    if (!rear_segment_manager_->initialize())
+    if (rear_camera != nullptr)
     {
-        Logger::error("[CONTROLLER] Failed to initialize rear segment manager.");
+        rear_segment_manager_ =
+            new SegmentManager(
+                storage_config.recording_path,
+                "rear",
+                recording_config.segment_duration
+            );
 
-        return false;
+        if (!rear_segment_manager_->initialize())
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to initialize rear segment manager.");
+
+            return false;
+        }
     }
 
     // ------------------------------------------------------------
     // Camera sources
     // ------------------------------------------------------------
 
-    Logger::info(
-        "Front camera source: " +
-        front_camera->getPipelineSource()
-    );
+    if (front_camera != nullptr)
+    {
+        Logger::info(
+            "Front camera source: " +
+            front_camera->getPipelineSource()
+        );
+    }
 
-    Logger::info(
-        "Rear camera source: " +
-        rear_camera->getPipelineSource()
-    );
+    if (rear_camera != nullptr)
+    {
+        Logger::info(
+            "Rear camera source: " +
+            rear_camera->getPipelineSource()
+        );
+    }
 
     // ------------------------------------------------------------
     // Recording manager
@@ -314,34 +401,50 @@ bool DashcamController::initializeRecordings()
     // Front recorder
     // ------------------------------------------------------------
 
-    if (!recording_manager_->addRecorder(
-            "front",
-            std::make_unique<Recorder>(
-                recording_config,
-                front_camera,
-                &encoder_backend_,
-                front_segment_manager_,
-                &event_manager_)))
+    if (front_camera != nullptr)
     {
-        Logger::error("[CONTROLLER] Failed to add front recorder.");
-        return false;
+        if (!recording_manager_->addRecorder(
+                "front",
+                std::make_unique<Recorder>(
+                    recording_config,
+                    front_camera,
+                    &encoder_backend_,
+                    front_segment_manager_,
+                    &event_manager_)))
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to add front recorder.");
+
+            return false;
+        }
+
+        Logger::info(
+            "[CONTROLLER] Front recorder initialized.");
     }
 
     // ------------------------------------------------------------
     // Rear recorder
     // ------------------------------------------------------------
 
-    if (!recording_manager_->addRecorder(
-            "rear",
-            std::make_unique<Recorder>(
-                recording_config,
-                rear_camera,
-                &encoder_backend_,
-                rear_segment_manager_,
-                &event_manager_)))
+    if (rear_camera != nullptr)
     {
-        Logger::error("[CONTROLLER] Failed to add rear recorder.");
-        return false;
+        if (!recording_manager_->addRecorder(
+                "rear",
+                std::make_unique<Recorder>(
+                    recording_config,
+                    rear_camera,
+                    &encoder_backend_,
+                    rear_segment_manager_,
+                    &event_manager_)))
+        {
+            Logger::error(
+                "[CONTROLLER] Failed to add rear recorder.");
+
+            return false;
+        }
+
+        Logger::info(
+            "[CONTROLLER] Rear recorder initialized.");
     }
 
     return true;
