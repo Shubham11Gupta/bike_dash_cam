@@ -5,6 +5,7 @@
 #include "../configuration/ConfigManager.hpp"
 #include "../events/EventManager.hpp"
 #include "../platform/SoftwareEncoderBackend.hpp"
+//#include "../platform/NvidiaEncoderBackend.hpp"
 #include "../camera/CameraManager.hpp"
 #include "../recording/RecordingManager.hpp"
 #include "../recording/SegmentManager.hpp"
@@ -56,6 +57,7 @@ private:
     StorageManager* storage_manager_;
     SystemMonitor* system_monitor_;
     SoftwareEncoderBackend encoder_backend_;
+    //NvidiaEncoderBackend encoder_backend_;
 
     // ------------------------------------------------------------
     // Camera / recording services
