@@ -4,11 +4,13 @@ system:
 cameras:
   front:
     enabled: true
+    source: ./videos/front_sample.mp4
     resolution: 1920x1080
     fps: 30
 
   rear:
     enabled: true
+    source: ./videos/rear_sample.mp4
     resolution: 1920x1080
     fps: 30
 

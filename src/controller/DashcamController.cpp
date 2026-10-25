@@ -226,7 +226,7 @@ bool DashcamController::initializeCameras()
         if (!camera_manager_->addCamera(
                 "front",
                 std::make_unique<SimulatedCamera>(
-                    "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/front_sample.mp4")))
+                    "/mnt/bdm/Videos/front_sample.mp4")))
         {
             Logger::error(
                 "[CONTROLLER] Failed to add front camera.");
@@ -249,7 +249,7 @@ bool DashcamController::initializeCameras()
         if (!camera_manager_->addCamera(
                 "rear",
                 std::make_unique<SimulatedCamera>(
-                    "C:/Users/shubh/OneDrive/Desktop/work/ideation/Bike Dashcam/Videos/rear_sample.mp4")))
+                    "/mnt/bdm/Videos/rear_sample.mp4")))
         {
             Logger::error(
                 "[CONTROLLER] Failed to add rear camera.");
@@ -553,7 +553,7 @@ int DashcamController::run()
     running_ = true;
 
     const auto test_start_time = std::chrono::steady_clock::now();
-    const auto test_duration = std::chrono::seconds(15);
+    const auto test_duration = std::chrono::seconds(60);
 
     // ------------------------------------------------------------
     // Recording loop

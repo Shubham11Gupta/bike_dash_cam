@@ -7,48 +7,35 @@ project(bike_dashcam
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# --------------------------------------------------
-# GStreamer
-# --------------------------------------------------
+# ------------------------------------------------------------
+# Platform validation
+# ------------------------------------------------------------
 
-set(GSTREAMER_ROOT
-    "C:/Program Files/gstreamer/1.0/msvc_x86_64"
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(FATAL_ERROR
+        "This CMake configuration is intended for Linux."
+    )
+endif()
+
+# ------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------
+
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET
+    gstreamer-1.0
+    gobject-2.0
+    glib-2.0
 )
-
-set(GSTREAMER_INCLUDE_DIR
-    "${GSTREAMER_ROOT}/include/gstreamer-1.0"
-)
-
-set(GLIB_INCLUDE_DIR
-    "${GSTREAMER_ROOT}/include/glib-2.0"
-)
-
-set(GLIB_CONFIG_INCLUDE_DIR
-    "${GSTREAMER_ROOT}/lib/glib-2.0/include"
-)
-
-set(GSTREAMER_LIB_DIR
-    "${GSTREAMER_ROOT}/lib"
-)
-
-# Tell the compiler where GStreamer headers are located
-include_directories(
-    "${GSTREAMER_INCLUDE_DIR}"
-    "${GLIB_INCLUDE_DIR}"
-    "${GLIB_CONFIG_INCLUDE_DIR}"
-)
-
-# Tell the linker where GStreamer libraries are located
-link_directories(
-    "${GSTREAMER_LIB_DIR}"
-)
-
-# --------------------------------------------------
-# Application
-# --------------------------------------------------
 
 find_package(yaml-cpp CONFIG REQUIRED)
+
+# ------------------------------------------------------------
+# Application
+# ------------------------------------------------------------
 
 add_executable(bike-dashcam
     main.cpp
@@ -68,11 +55,22 @@ add_executable(bike-dashcam
     src/platform/NvidiaEncoderBackend.cpp
 )
 
-# Link GStreamer
-target_link_libraries(bike-dashcam
-    PRIVATE
-        gstreamer-1.0.lib
-        gobject-2.0.lib
-        glib-2.0.lib
-        yaml-cpp::yaml-cpp
-    )
+target_include_directories(bike-dashcam PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(bike-dashcam PRIVATE
+    PkgConfig::GSTREAMER
+    yaml-cpp::yaml-cpp
+)
+
+# ------------------------------------------------------------
+# Compiler warnings
+# ------------------------------------------------------------
+
+target_compile_options(bike-dashcam PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
